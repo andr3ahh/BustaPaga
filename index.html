@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BustaPaga — Sistema buste paga CCNL Commercio</title>
+<style>
+  :root {
+    --blu: #1a3a6b; --blu-chiaro: #eef2f8; --bordo: #444;
+    --grigio: #f4f4f4; --verde: #1a7a3a; --rosso: #a02020;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; background: #e9ecf2; color: #222; }
+  header.app { background: var(--blu); color: #fff; padding: 10px 18px; display: flex; align-items: baseline; gap: 14px; }
+  header.app h1 { font-size: 19px; margin: 0; }
+  header.app small { opacity: .8; }
+  nav.tabs { background: #fff; border-bottom: 2px solid var(--blu); display: flex; flex-wrap: wrap; }
+  nav.tabs button { border: 0; background: none; padding: 11px 17px; font-size: 14px; cursor: pointer; border-bottom: 3px solid transparent; }
+  nav.tabs button.active { border-bottom-color: var(--blu); color: var(--blu); font-weight: 600; }
+  main { padding: 16px; max-width: 1250px; margin: 0 auto; }
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+  .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .card h2 { margin: 0 0 10px; font-size: 16px; color: var(--blu); }
+  .grid { display: grid; gap: 10px 14px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); } .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); } .g6 { grid-template-columns: repeat(6, 1fr); }
+  label.f { display: flex; flex-direction: column; font-size: 12px; color: #333; gap: 3px; }
+  label.f input, label.f select, label.f textarea { padding: 6px 8px; border: 1px solid #bbb; border-radius: 5px; font-size: 13px; }
+  label.chk { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  button.b { background: var(--blu); color: #fff; border: 0; padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+  button.b.sec { background: #667; } button.b.warn { background: var(--rosso); } button.b.ok { background: var(--verde); }
+  table.lista { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.lista th, table.lista td { border-bottom: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+  table.lista th { background: var(--blu-chiaro); }
+  table.lista td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .note { font-size: 12px; color: #555; background: var(--blu-chiaro); border-left: 3px solid var(--blu); padding: 8px 10px; border-radius: 4px; }
+  .err { color: var(--rosso); font-size: 13px; }
+  textarea.json { width: 100%; min-height: 380px; font-family: monospace; font-size: 12px; }
+
+  /* ============ LUL — grafica stile Zucchetti ============ */
+  .lul-wrap { background: #fff; padding: 10px; overflow-x: auto; }
+  .lul { width: 800px; margin: 0 auto; border: 1.5px solid var(--bordo); font-family: "Arial Narrow", Arial, sans-serif;
+         font-size: 10.5px; color: #111; position: relative; background: #fff; }
+  .lul .r { display: flex; border-bottom: 1px solid var(--bordo); }
+  .lul .c { border-right: 1px solid var(--bordo); padding: 1px 4px; min-height: 26px; }
+  .lul .c:last-child { border-right: 0; }
+  .lul .lab { font-size: 7.5px; color: #333; text-transform: uppercase; display: block; line-height: 1.1; }
+  .lul .val { font-size: 10.5px; font-weight: 600; line-height: 1.25; }
+  .lul .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .lul-body { display: flex; border-bottom: 1px solid var(--bordo); }
+  .lul-side { width: 20px; border-right: 1px solid var(--bordo); position: relative; background: #fafafa; }
+  .lul-side span { position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%) rotate(180deg); writing-mode: vertical-rl;
+    font-size: 7.5px; letter-spacing: 1.5px; color: #333; white-space: nowrap; }
+  .lul-voci { flex: 1; }
+  table.voci { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  table.voci th { border-bottom: 1px solid var(--bordo); font-size: 7.5px; text-transform: uppercase;
+    padding: 2px 4px; background: #fafafa; font-weight: 600; }
+  table.voci td { padding: 1.5px 4px; vertical-align: top; }
+  table.voci td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.voci tr.fig td { color: #333; }
+  .lul-foot .c { min-height: 22px; }
+  .lul-netto { font-size: 15px; font-weight: 700; text-align: right; padding: 3px 6px; }
+  .lul-cred { font-size: 7px; text-align: center; border-top: 1px solid var(--bordo); padding: 2px; color: #444; }
+
+  @media print {
+    body { background: #fff; }
+    body.print-lul > *:not(#printArea) { display: none !important; }
+    #printArea { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
+    #printArea .lul { width: 100%; border-width: 1px; }
+    @page { size: A4 portrait; margin: 10mm; }
+  }
+  #printArea { display: none; }
+</style>
+</head>
+<body>
+<header class="app">
+  <h1>BustaPaga</h1>
+  <small>Sistema di calcolo e generazione buste paga — CCNL Terziario/Commercio (Confcommercio) — Livello Quadro</small>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-tab="aziende" class="active">Aziende</button>
+  <button data-tab="dipendenti">Dipendenti</button>
+  <button data-tab="elabora">Elabora busta</button>
+  <button data-tab="archivio">Archivio buste</button>
+  <button data-tab="cu">Prospetto CU</button>
+  <button data-tab="parametri">Parametri</button>
+</nav>
+<main>
+
+<!-- ================= AZIENDE ================= -->
+<section class="tab active" id="tab-aziende">
+  <div class="card">
+    <h2 id="azFormTitle">Nuova azienda</h2>
+    <form id="azForm" class="grid g3">
+      <input type="hidden" id="az_id">
+      <label class="f">Codice azienda<input id="az_codice" placeholder="000293"></label>
+      <label class="f" style="grid-column: span 2">Ragione sociale *<input id="az_ragione" required placeholder="ASD EVENTI SPORTIVI PALMANOVA"></label>
+      <label class="f" style="grid-column: span 2">Indirizzo (via e civico)<input id="az_indirizzo" placeholder="VIA GRADO 5"></label>
+      <label class="f">CAP, Città (Prov)<input id="az_citta" placeholder="33057 PALMANOVA (UD)"></label>
+      <label class="f">Codice fiscale<input id="az_cf" placeholder="02379760305"></label>
+      <label class="f">Partita IVA<input id="az_piva"></label>
+      <label class="f">Posizione INPS (matricola)<input id="az_inps" placeholder="8609093317/00"></label>
+      <label class="f">P.A.T. INAIL<input id="az_pat" placeholder="097385659/03"></label>
+      <label class="f">Voce di tariffa INAIL<input id="az_vocetariffa" placeholder="0722"></label>
+      <label class="f">Tasso INAIL (per mille)<input id="az_tassoinail" type="number" step="0.01" placeholder="5.00"></label>
+      <label class="f">Dimensione azienda (per aliquote FIS/CIGS)
+        <select id="az_dimensione">
+          <option value="fino5">Fino a 5 dipendenti</option>
+          <option value="da6a15">Da 6 a 15 dipendenti</option>
+          <option value="da16a50">Da 16 a 50 dipendenti</option>
+          <option value="oltre50">Oltre 50 dipendenti</option>
+        </select></label>
+      <label class="f">Sede di lavoro<input id="az_sede" placeholder="SEDE DI PALMANOVA"></label>
+      <label class="f">Autorizzazione LUL (n. e data)<input id="az_aut" placeholder="Aut. 41919 del 29-01-2009"></label>
+      <label class="f">Note legali / rappresentante<input id="az_note"></label>
+    </form>
+    <div class="actions">
+      <button class="b" onclick="salvaAzienda()">Salva azienda</button>
+      <button class="b sec" onclick="resetAzForm()">Annulla</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Aziende registrate</h2>
+    <table class="lista" id="azLista"></table>
+  </div>
+</section>
+
+<!-- ================= DIPENDENTI ================= -->
+<section class="tab" id="tab-dipendenti">
+  <div class="card">
+    <h2 id="dipFormTitle">Nuovo dipendente</h2>
+    <form id="dipForm" class="grid g3">
+      <input type="hidden" id="d_id">
+      <label class="f">Azienda *<select id="d_azienda"></select></label>
+      <label class="f">Cognome *<input id="d_cognome" required></label>
+      <label class="f">Nome *<input id="d_nome" required></label>
+      <label class="f">Codice fiscale<input id="d_cf" maxlength="16" style="text-transform:uppercase"></label>
+      <label class="f">Data di nascita<input id="d_nascita" type="date"></label>
+      <label class="f">Luogo di nascita<input id="d_luogonascita"></label>
+      <label class="f" style="grid-column: span 2">Indirizzo di residenza<input id="d_indirizzo"></label>
+      <label class="f">Matricola<input id="d_matricola"></label>
+      <label class="f">Livello CCNL
+        <select id="d_livello">
+          <option value="QUADRO" selected>QUADRO</option>
+          <option value="1">1º livello</option><option value="2">2º livello</option>
+          <option value="3">3º livello</option><option value="4">4º livello</option>
+          <option value="5">5º livello</option><option value="6">6º livello</option>
+          <option value="7">7º livello</option>
+        </select></label>
+      <label class="f">Data assunzione *<input id="d_assunzione" type="date" required></label>
+      <label class="f">Tipo contratto
+        <select id="d_tipocontratto"><option value="TI">Tempo indeterminato</option><option value="TD">Tempo determinato</option></select></label>
+      <label class="f">Scadenza contratto / cessazione<input id="d_cessazione" type="date"></label>
+      <label class="f">Retribuzione mensile lorda € (RAL ÷ 14)<input id="d_retribmensile" type="number" step="0.01" placeholder="es. 3000,00"></label>
+      <label class="f">RAL annua € (informativo)<input id="d_ral" type="number" step="0.01" oninput="ralToMensile()"></label>
+      <label class="f">% part-time<input id="d_parttime" type="number" value="100" min="1" max="100"></label>
+      <label class="f">Scatti anzianità (vuoto = automatico)<input id="d_scatti" type="number" min="0" max="10" placeholder="auto"></label>
+      <label class="f">Terzo elemento € (vuoto = 2,07)<input id="d_terzoel" type="number" step="0.01" placeholder="2,07"></label>
+      <label class="f">ROL ore/anno<input id="d_rol" type="number" value="72"></label>
+      <label class="f">Ferie residue iniziali (gg)<input id="d_ferieres" type="number" step="0.01" value="0"></label>
+      <label class="f">ROL residui iniziali (ore)<input id="d_rolres" type="number" step="0.01" value="0"></label>
+      <label class="f">Ex-festività residue iniziali (ore)<input id="d_exfres" type="number" step="0.01" value="0"></label>
+      <label class="f">Modalità pagamento<input id="d_modpag" value="BONIFICO BANCARIO"></label>
+      <label class="f" style="grid-column: span 2">IBAN<input id="d_iban"></label>
+      <label class="chk"><input type="checkbox" id="d_post96" checked> Iscritto INPS dopo l'1/1/1996 (massimale contributivo)</label>
+      <label class="chk"><input type="checkbox" id="d_quas" checked> Qu.A.S. (sanità Quadri)</label>
+      <label class="chk"><input type="checkbox" id="d_quadrifor" checked> Quadrifor (formazione Quadri)</label>
+      <label class="chk"><input type="checkbox" id="d_fondopens"> Previdenza complementare (es. Fon.Te.)</label>
+      <label class="f">% dipendente fondo pensione<input id="d_fpdip" type="number" step="0.01" value="0.55"></label>
+      <label class="f">% azienda fondo pensione<input id="d_fpaz" type="number" step="0.01" value="1.55"></label>
+    </form>
+    <div class="actions">
+      <button class="b" onclick="salvaDipendente()">Salva dipendente</button>
+      <button class="b sec" onclick="resetDipForm()">Annulla</button>
+    </div>
+    <p class="note" style="margin-top:10px">La retribuzione mensile viene scomposta automaticamente: paga base + contingenza + terzo elemento +
+    indennità di funzione (Quadri) + scatti; l'eventuale differenza diventa <b>superminimo assorbibile</b>.
+    I fondi Fondir/For.Te. sono fondi interprofessionali finanziati con lo 0,30% INPS a carico azienda: nessuna trattenuta al dipendente.</p>
+  </div>
+  <div class="card">
+    <h2>Dipendenti registrati</h2>
+    <table class="lista" id="dipLista"></table>
+  </div>
+</section>
+
+<!-- ================= ELABORA ================= -->
+<section class="tab" id="tab-elabora">
+  <div class="card">
+    <h2>Elaborazione busta paga mensile</h2>
+    <div class="grid g4">
+      <label class="f">Azienda<select id="e_azienda" onchange="popolaDipElabora()"></select></label>
+      <label class="f">Dipendente<select id="e_dip" onchange="precompilaElabora()"></select></label>
+      <label class="f">Anno<input id="e_anno" type="number" onchange="precompilaElabora()"></label>
+      <label class="f">Mese<select id="e_mese" onchange="precompilaElabora()"></select></label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Presenze e variabili del mese</h2>
+    <div class="grid g4">
+      <label class="f">Giorni retribuiti (mensilizzato = 26)<input id="e_ggretrib" type="number" step="0.01" value="26"></label>
+      <label class="f">Giorni lavorati<input id="e_gglav" type="number" step="0.5" value="20"></label>
+      <label class="f">Ore lavorate<input id="e_orelav" type="number" step="0.5" value="160"></label>
+      <label class="f">Giorni detrazione (gg del mese)<input id="e_ggdetr" type="number" value="30"></label>
+      <label class="f">Ferie godute (gg)<input id="e_ferie" type="number" step="0.5" value="0"></label>
+      <label class="f">Permessi ROL goduti (ore)<input id="e_rol" type="number" step="0.5" value="0"></label>
+      <label class="f">Ex-festività godute (ore)<input id="e_exfest" type="number" step="0.5" value="0"></label>
+      <label class="f">Festività (gg)<input id="e_festivita" type="number" step="0.5" value="0"></label>
+      <label class="f">Straordinario +15% (ore)<input id="e_str15" type="number" step="0.5" value="0"></label>
+      <label class="f">Straordinario festivo +30% (ore)<input id="e_str30" type="number" step="0.5" value="0"></label>
+      <label class="f">Straordinario notturno +50% (ore)<input id="e_str50" type="number" step="0.5" value="0"></label>
+      <label class="f">Bonus / una tantum €<input id="e_bonus" type="number" step="0.01" value="0"></label>
+      <label class="f">Descrizione bonus<input id="e_bonusdescr" placeholder="Premio risultato"></label>
+      <label class="f">Note spese (rimborsi documentati) €<input id="e_notespese" type="number" step="0.01" value="0"></label>
+      <label class="f">Buoni pasto: giorni<input id="e_bpgg" type="number" value="0"></label>
+      <label class="f">Buoni pasto: valore unitario €<input id="e_bpval" type="number" step="0.01" value="8"></label>
+      <label class="f">Buoni pasto: tipo
+        <select id="e_bptipo"><option value="elettronico">Elettronico</option><option value="cartaceo">Cartaceo</option></select></label>
+      <label class="f">Fringe benefit €<input id="e_fringe" type="number" step="0.01" value="0"></label>
+      <label class="f">Rata add. regionale €<input id="e_addreg" type="number" step="0.01" value="0"></label>
+      <label class="f">Rata add. comunale (saldo) €<input id="e_addcom" type="number" step="0.01" value="0"></label>
+      <label class="f">Rata acconto add. comunale €<input id="e_addacc" type="number" step="0.01" value="0"></label>
+      <label class="f">Arrotondamento mese precedente €<input id="e_arrprec" type="number" step="0.01" value="0"></label>
+    </div>
+    <div class="grid g4" style="margin-top:8px">
+      <label class="chk"><input type="checkbox" id="e_cessazione"> Cessazione nel mese</label>
+      <label class="chk"><input type="checkbox" id="e_conguaglio"> Conguaglio fiscale (auto a dicembre)</label>
+      <label class="chk"><input type="checkbox" id="e_fringeimp"> Fringe benefit imponibile (oltre soglia annua)</label>
+    </div>
+    <div class="actions">
+      <button class="b" onclick="anteprimaBusta()">Calcola anteprima</button>
+      <button class="b ok" onclick="salvaBusta()">Salva busta in archivio</button>
+      <button class="b sec" onclick="stampaBusta()">Stampa / PDF</button>
+    </div>
+    <p class="err" id="e_err"></p>
+  </div>
+  <div class="card lul-wrap" id="anteprimaWrap" style="display:none">
+    <div id="anteprima"></div>
+  </div>
+</section>
+
+<!-- ================= ARCHIVIO ================= -->
+<section class="tab" id="tab-archivio">
+  <div class="card">
+    <h2>Archivio buste paga</h2>
+    <div class="grid g4">
+      <label class="f">Azienda<select id="a_azienda" onchange="renderArchivio()"></select></label>
+      <label class="f">Dipendente<select id="a_dip" onchange="renderArchivio()"></select></label>
+      <label class="f">Anno<select id="a_anno" onchange="renderArchivio()"></select></label>
+      <label class="f">&nbsp;<button class="b sec" onclick="esportaDati()">Esporta backup JSON</button></label>
+    </div>
+    <div class="actions">
+      <label class="chk">Importa backup: <input type="file" id="importFile" accept=".json" onchange="importaDati(event)"></label>
+    </div>
+    <table class="lista" id="archLista" style="margin-top:10px"></table>
+  </div>
+  <div class="card lul-wrap" id="archViewWrap" style="display:none"><div id="archView"></div></div>
+</section>
+
+<!-- ================= CU ================= -->
+<section class="tab" id="tab-cu">
+  <div class="card">
+    <h2>Prospetto voci Certificazione Unica</h2>
+    <p class="note">Prospetto di calcolo delle principali voci utili alla compilazione della CU
+    (non genera il modello ufficiale). I valori derivano dalle buste salvate in archivio per l'anno selezionato.</p>
+    <div class="grid g4" style="margin-top:10px">
+      <label class="f">Azienda<select id="c_azienda" onchange="popolaDipCU()"></select></label>
+      <label class="f">Dipendente<select id="c_dip"></select></label>
+      <label class="f">Anno d'imposta<input id="c_anno" type="number"></label>
+      <label class="f">&nbsp;<button class="b" onclick="renderCU()">Genera prospetto</button></label>
+    </div>
+    <div id="cuOut" style="margin-top:14px"></div>
+  </div>
+</section>
+
+<!-- ================= PARAMETRI ================= -->
+<section class="tab" id="tab-parametri">
+  <div class="card">
+    <h2>Parametri di calcolo (CCNL, INPS, IRPEF, addizionali, fondi)</h2>
+    <p class="note">Valori precaricati: CCNL Terziario Confcommercio (rinnovo 22/03/2024, tranche fino a feb 2027),
+    IRPEF 2025 (23/35/43) e 2026 (23/33/43), massimale INPS 2026 € 122.295, soglia 1% € 56.224,
+    Qu.A.S. 2026 (€ 56 dip. / € 390 azienda), Quadrifor (€ 25 / € 50), buoni pasto esenti € 10 elettronici dal 2026,
+    addizionale regionale FVG e comunale Palmanova. Modificare qui sotto per aggiornamenti futuri
+    (es. nuove tranche CCNL, aliquote comunali, coefficiente rivalutazione TFR).</p>
+    <textarea class="json" id="paramsJson" spellcheck="false"></textarea>
+    <div class="actions">
+      <button class="b" onclick="salvaParams()">Salva parametri</button>
+      <button class="b warn" onclick="resetParams()">Ripristina default</button>
+    </div>
+    <p class="err" id="p_err"></p>
+  </div>
+</section>
+</main>
+
+<div id="printArea"></div>
+
+<script src="payroll-engine.js"></script>
+<script>
+'use strict';
+const E = PayrollEngine;
+const LS = { az: 'bp_aziende', dip: 'bp_dipendenti', buste: 'bp_buste', par: 'bp_params' };
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+let aziende = load(LS.az, []);
+let dipendenti = load(LS.dip, []);
+let buste = load(LS.buste, []);
+let params = load(LS.par, null) || JSON.parse(JSON.stringify(E.DEFAULT_PARAMS));
+
+// prima esecuzione: precarica l'azienda dell'esempio
+if (!aziende.length && !localStorage.getItem('bp_init')) {
+  aziende.push({ id: 'az1', codice: '000293', ragioneSociale: 'ASD EVENTI SPORTIVI PALMANOVA',
+    indirizzo: 'VIA GRADO 5', citta: '33057 PALMANOVA (UD)', cf: '02379760305', piva: '',
+    posInps: '8609093317/00', patInail: '097385659/03', voceTariffa: '0722', inailTasso: 5,
+    dimensione: 'fino5', sede: 'SEDE DI PALMANOVA', aut: '', note: '' });
+  save(LS.az, aziende); localStorage.setItem('bp_init', '1');
+}
+
+const MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const fmt = (n, d = 2) => (n == null || isNaN(n)) ? '' : Number(n).toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fq = (n) => (n == null || !n) ? '' : Number(n).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 5 });
+const val = (id) => document.getElementById(id).value;
+const num = (id) => parseFloat(document.getElementById(id).value) || 0;
+const chk = (id) => document.getElementById(id).checked;
+const set = (id, v) => { document.getElementById(id).value = v; };
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtData = (iso) => { if (!iso) return ''; const [a, m, g] = String(iso).split('-'); return (g && m && a) ? `${g}-${m}-${a}` : iso; };
+
+// ---------------- tabs ----------------
+document.getElementById('tabs').addEventListener('click', (ev) => {
+  if (ev.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b === ev.target));
+  document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + ev.target.dataset.tab));
+  refreshAll();
+});
+
+// ---------------- aziende ----------------
+function salvaAzienda() {
+  if (!val('az_ragione').trim()) { alert('Ragione sociale obbligatoria'); return; }
+  const id = val('az_id') || ('az' + Date.now());
+  const az = { id, codice: val('az_codice'), ragioneSociale: val('az_ragione').toUpperCase(),
+    indirizzo: val('az_indirizzo').toUpperCase(), citta: val('az_citta').toUpperCase(),
+    cf: val('az_cf'), piva: val('az_piva'), posInps: val('az_inps'), patInail: val('az_pat'),
+    voceTariffa: val('az_vocetariffa'), inailTasso: num('az_tassoinail'),
+    dimensione: val('az_dimensione'), sede: val('az_sede').toUpperCase(), aut: val('az_aut'), note: val('az_note') };
+  const i = aziende.findIndex(a => a.id === id);
+  if (i >= 0) aziende[i] = az; else aziende.push(az);
+  save(LS.az, aziende); resetAzForm(); refreshAll();
+}
+function resetAzForm() {
+  document.getElementById('azForm').reset(); set('az_id', '');
+  document.getElementById('azFormTitle').textContent = 'Nuova azienda';
+}
+function editAzienda(id) {
+  const a = aziende.find(x => x.id === id); if (!a) return;
+  set('az_id', a.id); set('az_codice', a.codice); set('az_ragione', a.ragioneSociale);
+  set('az_indirizzo', a.indirizzo); set('az_citta', a.citta); set('az_cf', a.cf); set('az_piva', a.piva);
+  set('az_inps', a.posInps); set('az_pat', a.patInail); set('az_vocetariffa', a.voceTariffa || '');
+  set('az_tassoinail', a.inailTasso || ''); set('az_dimensione', a.dimensione || 'fino5');
+  set('az_sede', a.sede || ''); set('az_aut', a.aut || ''); set('az_note', a.note || '');
+  document.getElementById('azFormTitle').textContent = 'Modifica azienda';
+  window.scrollTo(0, 0);
+}
+function delAzienda(id) {
+  if (!confirm('Eliminare l\'azienda? I dipendenti e le buste collegate resteranno in archivio.')) return;
+  aziende = aziende.filter(a => a.id !== id); save(LS.az, aziende); refreshAll();
+}
+function renderAziende() {
+  const t = document.getElementById('azLista');
+  t.innerHTML = '<tr><th>Codice</th><th>Ragione sociale</th><th>CF</th><th>Pos. INPS</th><th>PAT INAIL</th><th>Dimensione</th><th></th></tr>'
+    + aziende.map(a => `<tr><td>${esc(a.codice)}</td><td>${esc(a.ragioneSociale)}</td><td>${esc(a.cf)}</td>
+      <td>${esc(a.posInps)}</td><td>${esc(a.patInail)}</td><td>${esc(a.dimensione)}</td>
+      <td><button class="b sec" onclick="editAzienda('${a.id}')">Modifica</button>
+          <button class="b warn" onclick="delAzienda('${a.id}')">Elimina</button></td></tr>`).join('');
+}
+
+// ---------------- dipendenti ----------------
+function ralToMensile() {
+  const ral = num('d_ral');
+  if (ral > 0) set('d_retribmensile', (ral / (params.ccnl.mensilita || 14)).toFixed(2));
+}
+function salvaDipendente() {
+  if (!val('d_cognome').trim() || !val('d_assunzione')) { alert('Cognome e data assunzione obbligatori'); return; }
+  const id = val('d_id') || ('dp' + Date.now());
+  const d = { id, aziendaId: val('d_azienda'), cognome: val('d_cognome').toUpperCase(), nome: val('d_nome').toUpperCase(),
+    cf: val('d_cf').toUpperCase(), dataNascita: val('d_nascita'), luogoNascita: val('d_luogonascita').toUpperCase(),
+    indirizzo: val('d_indirizzo').toUpperCase(), matricola: val('d_matricola'), livello: val('d_livello'),
+    dataAssunzione: val('d_assunzione'), tempoDeterminato: val('d_tipocontratto') === 'TD',
+    dataCessazione: val('d_cessazione') || null,
+    retribuzioneMensile: num('d_retribmensile') || null, ral: num('d_ral') || null,
+    percPartTime: num('d_parttime') || 100,
+    scattiManuali: val('d_scatti') === '' ? null : parseInt(val('d_scatti')),
+    terzoElemento: val('d_terzoel') === '' ? null : num('d_terzoel'),
+    rolOreAnno: num('d_rol') || 72,
+    ferieResidueIniziali: num('d_ferieres'), rolResidueIniziali: num('d_rolres'), exFestResidueIniziali: num('d_exfres'),
+    modalitaPagamento: val('d_modpag'), iban: val('d_iban').toUpperCase(),
+    iscrittoPost96: chk('d_post96'), quas: chk('d_quas'), quadrifor: chk('d_quadrifor'),
+    fondoPensione: chk('d_fondopens'), fondoPensioneDipPct: num('d_fpdip'), fondoPensioneAzPct: num('d_fpaz') };
+  const i = dipendenti.findIndex(x => x.id === id);
+  if (i >= 0) dipendenti[i] = d; else dipendenti.push(d);
+  save(LS.dip, dipendenti); resetDipForm(); refreshAll();
+}
+function resetDipForm() {
+  document.getElementById('dipForm').reset(); set('d_id', '');
+  set('d_parttime', 100); set('d_rol', 72); set('d_fpdip', 0.55); set('d_fpaz', 1.55);
+  document.getElementById('d_post96').checked = true;
+  document.getElementById('d_quas').checked = true;
+  document.getElementById('d_quadrifor').checked = true;
+  document.getElementById('dipFormTitle').textContent = 'Nuovo dipendente';
+}
+function editDipendente(id) {
+  const d = dipendenti.find(x => x.id === id); if (!d) return;
+  set('d_id', d.id); set('d_azienda', d.aziendaId); set('d_cognome', d.cognome); set('d_nome', d.nome);
+  set('d_cf', d.cf || ''); set('d_nascita', d.dataNascita || ''); set('d_luogonascita', d.luogoNascita || '');
+  set('d_indirizzo', d.indirizzo || ''); set('d_matricola', d.matricola || ''); set('d_livello', d.livello || 'QUADRO');
+  set('d_assunzione', d.dataAssunzione); set('d_tipocontratto', d.tempoDeterminato ? 'TD' : 'TI');
+  set('d_cessazione', d.dataCessazione || ''); set('d_retribmensile', d.retribuzioneMensile || '');
+  set('d_ral', d.ral || ''); set('d_parttime', d.percPartTime || 100);
+  set('d_scatti', d.scattiManuali == null ? '' : d.scattiManuali);
+  set('d_terzoel', d.terzoElemento == null ? '' : d.terzoElemento);
+  set('d_rol', d.rolOreAnno || 72); set('d_ferieres', d.ferieResidueIniziali || 0);
+  set('d_rolres', d.rolResidueIniziali || 0); set('d_exfres', d.exFestResidueIniziali || 0);
+  set('d_modpag', d.modalitaPagamento || 'BONIFICO BANCARIO'); set('d_iban', d.iban || '');
+  document.getElementById('d_post96').checked = !!d.iscrittoPost96;
+  document.getElementById('d_quas').checked = !!d.quas;
+  document.getElementById('d_quadrifor').checked = d.quadrifor !== false;
+  document.getElementById('d_fondopens').checked = !!d.fondoPensione;
+  set('d_fpdip', d.fondoPensioneDipPct || 0.55); set('d_fpaz', d.fondoPensioneAzPct || 1.55);
+  document.getElementById('dipFormTitle').textContent = 'Modifica dipendente';
+  window.scrollTo(0, 0);
+}
+function delDipendente(id) {
+  if (!confirm('Eliminare il dipendente? Le buste in archivio resteranno.')) return;
+  dipendenti = dipendenti.filter(d => d.id !== id); save(LS.dip, dipendenti); refreshAll();
+}
+function renderDipendenti() {
+  const t = document.getElementById('dipLista');
+  t.innerHTML = '<tr><th>Dipendente</th><th>Azienda</th><th>Livello</th><th>Assunzione</th><th>Mensile €</th><th>Contratto</th><th></th></tr>'
+    + dipendenti.map(d => {
+      const az = aziende.find(a => a.id === d.aziendaId);
+      return `<tr><td>${esc(d.cognome)} ${esc(d.nome)}</td><td>${esc(az ? az.ragioneSociale : '?')}</td>
+        <td>${esc(d.livello)}</td><td>${esc(d.dataAssunzione)}</td><td class="num">${fmt(d.retribuzioneMensile)}</td>
+        <td>${d.tempoDeterminato ? 'T.Det.' : 'T.Indet.'}</td>
+        <td><button class="b sec" onclick="editDipendente('${d.id}')">Modifica</button>
+            <button class="b warn" onclick="delDipendente('${d.id}')">Elimina</button></td></tr>`;
+    }).join('');
+}
+
+// ---------------- select helpers ----------------
+function opzioniAziende(sel, all) {
+  const s = document.getElementById(sel);
+  s.innerHTML = (all ? '<option value="">— Tutte —</option>' : '')
+    + aziende.map(a => `<option value="${a.id}">${esc(a.ragioneSociale)}</option>`).join('');
+}
+function opzioniDip(sel, azId, all) {
+  const s = document.getElementById(sel);
+  const ds = dipendenti.filter(d => !azId || d.aziendaId === azId);
+  s.innerHTML = (all ? '<option value="">— Tutti —</option>' : '')
+    + ds.map(d => `<option value="${d.id}">${esc(d.cognome)} ${esc(d.nome)}</option>`).join('');
+}
+
+// ---------------- elaborazione ----------------
+function popolaDipElabora() { opzioniDip('e_dip', val('e_azienda')); precompilaElabora(); }
+
+function precompilaElabora() {
+  const anno = parseInt(val('e_anno')), mese = parseInt(val('e_mese'));
+  const dip = dipendenti.find(d => d.id === val('e_dip'));
+  if (!anno || !mese) return;
+  set('e_ggdetr', new Date(anno, mese, 0).getDate());
+  if (!dip) return;
+  // arrotondamento riportato dal mese precedente
+  const prec = trovaBusta(dip.id, mese === 1 ? anno - 1 : anno, mese === 1 ? 12 : mese - 1);
+  set('e_arrprec', prec ? (prec.calc.arrotondamentoAttuale || 0) : 0);
+  // rate addizionali suggerite dal conguaglio dell'anno precedente
+  const cgPrec = busteDi(dip.id, anno - 1).map(b => b.calc.conguaglio).filter(Boolean).pop();
+  if (cgPrec) {
+    const accTratt = busteDi(dip.id, anno - 1).reduce((s, b) => s + (b.calc.rataAccontoComunale || 0), 0);
+    set('e_addreg', mese <= 11 ? (cgPrec.addRegionaleDovuta / 11).toFixed(2) : 0);
+    set('e_addcom', mese <= 11 ? (Math.max(0, cgPrec.addComunaleDovuta - accTratt) / 11).toFixed(2) : 0);
+    set('e_addacc', (mese >= 3 && mese <= 11) ? (cgPrec.accontoComunale / 9).toFixed(2) : 0);
+  } else { set('e_addreg', 0); set('e_addcom', 0); set('e_addacc', 0); }
+  document.getElementById('e_conguaglio').checked = (mese === 12);
+}
+
+function inputElabora() {
+  return {
+    anno: parseInt(val('e_anno')), mese: parseInt(val('e_mese')),
+    giorniRetribuiti: num('e_ggretrib'), giorniLavorati: num('e_gglav'), oreLavorate: num('e_orelav'),
+    giorniDetrazione: num('e_ggdetr'),
+    ferieGodute: num('e_ferie'), rolGodute: num('e_rol'), exFestGodute: num('e_exfest'), festivita: num('e_festivita'),
+    oreStraordinario: num('e_str15'), oreStraordFestivo: num('e_str30'), oreStraordNotturno: num('e_str50'),
+    bonus: num('e_bonus'), bonusDescrizione: val('e_bonusdescr'),
+    noteSpese: num('e_notespese'),
+    buoniPastoGiorni: num('e_bpgg'), buoniPastoValore: num('e_bpval'), buoniPastoTipo: val('e_bptipo'),
+    fringeBenefit: num('e_fringe'), fringeBenefitImponibile: chk('e_fringeimp'),
+    rataAddRegionale: num('e_addreg'), rataAddComunale: num('e_addcom'), rataAccontoComunale: num('e_addacc'),
+    arrotondamentoPrecedente: num('e_arrprec'),
+    cessazione: chk('e_cessazione'), conguaglio: chk('e_conguaglio') || undefined
+  };
+}
+
+let ultimaAnteprima = null;
+function anteprimaBusta() {
+  document.getElementById('e_err').textContent = '';
+  try {
+    const az = aziende.find(a => a.id === val('e_azienda'));
+    const dip = dipendenti.find(d => d.id === val('e_dip'));
+    if (!az || !dip) throw new Error('Selezionare azienda e dipendente');
+    const inp = inputElabora();
+    const storico = busteDi(dip.id, inp.anno).map(b => b.calc);
+    const calc = E.calcolaBusta(params, az, dip, inp, storico);
+    ultimaAnteprima = { az, dip, inp, calc };
+    document.getElementById('anteprimaWrap').style.display = 'block';
+    document.getElementById('anteprima').innerHTML = renderLUL(az, dip, inp, calc);
+  } catch (err) {
+    document.getElementById('e_err').textContent = 'Errore: ' + err.message;
+    console.error(err);
+  }
+}
+function salvaBusta() {
+  anteprimaBusta();
+  if (!ultimaAnteprima) return;
+  const { az, dip, inp, calc } = ultimaAnteprima;
+  const key = dip.id + '_' + inp.anno + '_' + inp.mese;
+  const i = buste.findIndex(b => b.key === key);
+  const rec = { key, aziendaId: az.id, dipId: dip.id, anno: inp.anno, mese: inp.mese,
+    salvataIl: new Date().toISOString(), input: inp, calc };
+  if (i >= 0) { if (!confirm('Esiste già una busta per questo mese: sovrascrivere?')) return; buste[i] = rec; }
+  else buste.push(rec);
+  save(LS.buste, buste);
+  alert('Busta ' + MESI[inp.mese - 1] + ' ' + inp.anno + ' salvata in archivio.');
+  refreshAll();
+}
+function stampaBusta() {
+  if (!ultimaAnteprima) anteprimaBusta();
+  if (!ultimaAnteprima) return;
+  stampaHTML(document.getElementById('anteprima').innerHTML);
+}
+function stampaHTML(html) {
+  const pa = document.getElementById('printArea');
+  pa.innerHTML = html;
+  document.body.classList.add('print-lul');
+  window.print();
+  setTimeout(() => { document.body.classList.remove('print-lul'); pa.innerHTML = ''; }, 500);
+}
+
+function trovaBusta(dipId, anno, mese) { return buste.find(b => b.dipId === dipId && b.anno === anno && b.mese === mese); }
+function busteDi(dipId, anno) { return buste.filter(b => b.dipId === dipId && (!anno || b.anno === anno)).sort((a, b) => a.mese - b.mese); }
+
+// ---------------- rendering LUL (grafica stile Zucchetti) ----------------
+function renderLUL(az, dip, inp, c) {
+  const el = c.elementi;
+  const settimane = Math.ceil(c.ggMese / 7);
+  const vociRows = c.voci.map(v => {
+    const flags = (v.C ? '*' : '&nbsp;') + ' ' + (v.I ? '*' : '&nbsp;');
+    return `<tr${v.figurativa && !v.competenza && !v.trattenuta ? ' class="fig"' : ''}>
+      <td style="width:26px;white-space:nowrap">${v.cod && v.cod.startsWith('F') ? '' : flags}</td>
+      <td style="width:38px">${esc(v.cod || '')}</td>
+      <td>${esc(v.descr)}</td>
+      <td class="num" style="width:75px">${v.base != null ? fq(v.base) : (v.rif != null ? fmt(v.rif) : '')}</td>
+      <td class="num" style="width:78px">${v.qta != null ? fq(v.qta) + (v.um ? '&nbsp;' + v.um : '') : ''}</td>
+      <td class="num" style="width:72px">${v.trattenuta != null ? fmt(v.trattenuta) : ''}</td>
+      <td class="num" style="width:72px">${v.competenza != null ? fmt(v.competenza) : ''}</td></tr>`;
+  }).join('');
+
+  const rat = c.ratei;
+  const cg = c.conguaglio;
+  return `<div class="lul">
+    <!-- intestazione azienda -->
+    <div class="r">
+      <div class="c" style="width:90px"><span class="lab">Codice Azienda</span><span class="val">${esc(az.codice)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Ragione Sociale</span><span class="val">${esc(az.ragioneSociale)}</span></div>
+      <div class="c" style="width:220px"><span class="lab">Periodo di retribuzione</span>
+        <span class="val" style="font-size:12px">${MESI[c.mese - 1]} ${c.anno}</span></div>
+    </div>
+    <div class="r">
+      <div class="c" style="flex:1"><span class="lab">Indirizzo</span><span class="val">${esc(az.indirizzo)} — ${esc(az.citta)}</span></div>
+      <div class="c" style="width:220px"><span class="lab">Sede</span><span class="val">${esc(az.sede || '')}</span></div>
+    </div>
+    <div class="r">
+      <div class="c" style="width:150px"><span class="lab">Codice Fiscale</span><span class="val">${esc(az.cf)}</span></div>
+      <div class="c" style="width:150px"><span class="lab">Posizione Inps</span><span class="val">${esc(az.posInps)}</span></div>
+      <div class="c" style="width:150px"><span class="lab">P.A.T. Inail</span><span class="val">${esc(az.patInail)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Voce tariffa Inail</span><span class="val">${esc(az.voceTariffa || '')}</span></div>
+      <div class="c" style="width:150px"><span class="lab">CCNL</span><span class="val">Commercio CNEL ${esc(params.ccnl.codiceCNEL)}</span></div>
+    </div>
+    <!-- dipendente -->
+    <div class="r">
+      <div class="c" style="width:90px"><span class="lab">Codice dipendente</span><span class="val">${esc(dip.matricola || '')}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Cognome e nome</span><span class="val">${esc(dip.cognome)} ${esc(dip.nome)}</span></div>
+      <div class="c" style="width:150px"><span class="lab">Codice fiscale</span><span class="val">${esc(dip.cf || '')}</span></div>
+      <div class="c" style="width:120px"><span class="lab">Qualifica</span><span class="val">${dip.livello === 'QUADRO' ? 'QUADRO' : dip.livello + ' Livello'} ${dip.tempoDeterminato ? 'T.Det.' : 'T.Indet.'}</span></div>
+    </div>
+    <div class="r">
+      <div class="c" style="width:120px"><span class="lab">Data di nascita</span><span class="val">${fmtData(dip.dataNascita)}</span></div>
+      <div class="c" style="width:120px"><span class="lab">Data assunzione</span><span class="val">${fmtData(dip.dataAssunzione)}</span></div>
+      <div class="c" style="width:120px"><span class="lab">Data cessazione</span><span class="val">${fmtData(dip.dataCessazione)}</span></div>
+      <div class="c" style="width:110px"><span class="lab">Scatti anz.</span><span class="val">${el.numScatti}</span></div>
+      <div class="c" style="width:90px"><span class="lab">% Part-time</span><span class="val">${el.percPartTime}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Pagamento</span><span class="val">${esc(dip.modalitaPagamento || '')} ${esc(dip.iban || '')}</span></div>
+    </div>
+    <!-- riga INPS / minimale / lavorato -->
+    <div class="r">
+      <div class="c" style="width:80px"><span class="lab">Settimane INPS</span><span class="val num">${settimane}</span></div>
+      <div class="c" style="width:80px"><span class="lab">GG retribuiti</span><span class="val num">${fq(inp.giorniRetribuiti)}</span></div>
+      <div class="c" style="width:80px"><span class="lab">GG lavorati</span><span class="val num">${fq(inp.giorniLavorati)}</span></div>
+      <div class="c" style="width:80px"><span class="lab">Ore lavorate</span><span class="val num">${fq(inp.oreLavorate)}</span></div>
+      <div class="c" style="width:90px"><span class="lab">GG detrazione</span><span class="val num">${c.giorniDetrazione}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Ore straordinarie</span><span class="val num">${fq((inp.oreStraordinario||0)+(inp.oreStraordFestivo||0)+(inp.oreStraordNotturno||0))}</span></div>
+    </div>
+    <!-- elementi della retribuzione -->
+    <div class="r" style="background:#fafafa">
+      <div class="c" style="width:20px;position:relative"><span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(180deg);writing-mode:vertical-rl;font-size:6.5px;letter-spacing:.5px">ELEMENTI RETRIB.</span></div>
+      <div class="c" style="flex:1"><span class="lab">Paga base</span><span class="val num">${fmt(el.pagaBase, 5)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Contingenza</span><span class="val num">${fmt(el.contingenza, 5)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Terzo elemento</span><span class="val num">${fmt(el.terzoElemento, 5)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Ind. funzione</span><span class="val num">${el.indennitaFunzione ? fmt(el.indennitaFunzione, 5) : ''}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Scatti anz.</span><span class="val num">${el.scatti ? fmt(el.scatti, 5) : ''}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Superm. assorb.</span><span class="val num">${el.superminimo ? fmt(el.superminimo, 5) : ''}</span></div>
+      <div class="c" style="flex:1;background:#f0f0f0"><span class="lab">Totale</span><span class="val num">${fmt(el.totale, 5)}</span></div>
+    </div>
+    <div class="r" style="background:#fafafa">
+      <div class="c" style="width:20px"></div>
+      <div class="c" style="flex:1"><span class="lab">Retribuzione oraria</span><span class="val num">${fq(el.oraria)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Retribuzione giornaliera</span><span class="val num">${fq(el.giornaliera)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Retribuzione mensile</span><span class="val num">${fmt(el.totale)}</span></div>
+      <div class="c" style="flex:2"><span class="lab">Reddito annuo di riferimento</span><span class="val num">${fmt(c.redditoAnnuoRiferimento)}</span></div>
+    </div>
+    <!-- corpo voci -->
+    <div class="lul-body">
+      <div class="lul-side"><span>VOCI VARIABILI DEL MESE</span></div>
+      <div class="lul-voci">
+        <table class="voci">
+          <tr><th style="width:26px">C I</th><th style="width:38px">Voce</th><th style="text-align:left">Descrizione</th>
+            <th class="num" style="width:75px">Importo base</th><th class="num" style="width:78px">Riferimento</th>
+            <th class="num" style="width:72px">Trattenute</th><th class="num" style="width:72px">Competenze</th></tr>
+          ${vociRows}
+        </table>
+      </div>
+    </div>
+    <!-- conguaglio -->
+    ${cg ? `<div class="r">
+      <div class="c" style="width:80px"><span class="lab">Conguaglio</span><span class="val">${MESI[c.mese-1].substring(0,3).toUpperCase()}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Imponibile annuo</span><span class="val num">${fmt(cg.impFiscAnnuo)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">IRPEF lorda</span><span class="val num">${fmt(cg.lordaAnnua)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Detrazioni</span><span class="val num">${fmt(cg.detrAnnua)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">IRPEF trattenuta</span><span class="val num">${fmt(cg.irpefTrattenutaAnno)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Add. regionale</span><span class="val num">${fmt(cg.addRegionaleDovuta)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Add. comunale</span><span class="val num">${fmt(cg.addComunaleDovuta)}</span></div>
+    </div>` : ''}
+    <!-- progressivi -->
+    <div class="r">
+      <div class="c" style="width:80px"><span class="lab">Progressivi</span></div>
+      <div class="c" style="flex:1"><span class="lab">Imp. INPS</span><span class="val num">${fmt(c.progressivi.impInps)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Imp. INAIL</span><span class="val num">${fmt(c.progressivi.impInps)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Imp. IRPEF</span><span class="val num">${fmt(c.progressivi.impIrpef)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">IRPEF pagata</span><span class="val num">${fmt(c.progressivi.irpefPagata)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Contributi anno</span><span class="val num">${fmt(c.progressivi.contributi)}</span></div>
+    </div>
+    <!-- TFR -->
+    <div class="r">
+      <div class="c" style="width:80px"><span class="lab">T.F.R.</span></div>
+      <div class="c" style="flex:1"><span class="lab">Retrib. utile TFR</span><span class="val num">${fmt(c.retribUtileTfr)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Quota mese</span><span class="val num">${fmt(c.quotaTfrNetta)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">TFR anno</span><span class="val num">${fmt(c.progressivi.tfrAnno)}</span></div>
+      <div class="c" style="flex:1"><span class="lab">a F.do pensione</span><span class="val num">${c.tfrAFondo ? fmt(c.tfrAFondo) : ''}</span></div>
+      <div class="c" style="flex:1"><span class="lab">Quota FAP 0,50%</span><span class="val num">${fmt(c.fap)}</span></div>
+    </div>
+    <!-- ratei e totali -->
+    <div class="r lul-foot">
+      <div class="c" style="flex:1.4;padding:0">
+        <table class="voci" style="font-size:9.5px">
+          <tr><th style="text-align:left">Ratei</th><th class="num">Residuo AP</th><th class="num">Maturato</th><th class="num">Goduto</th><th class="num">Saldo</th><th></th></tr>
+          <tr><td>Ferie</td><td class="num">${fq(rat.ferie.residuoAP)}</td><td class="num">${fq(rat.ferie.maturato)}</td><td class="num">${fq(rat.ferie.goduto)}</td><td class="num">${fq(rat.ferie.saldo)}</td><td>GG.</td></tr>
+          <tr><td>Perm. Ex-Fs</td><td class="num">${fq(rat.exFest.residuoAP)}</td><td class="num">${fq(rat.exFest.maturato)}</td><td class="num">${fq(rat.exFest.goduto)}</td><td class="num">${fq(rat.exFest.saldo)}</td><td>ORE</td></tr>
+          <tr><td>Permessi ROL</td><td class="num">${fq(rat.rol.residuoAP)}</td><td class="num">${fq(rat.rol.maturato)}</td><td class="num">${fq(rat.rol.goduto)}</td><td class="num">${fq(rat.rol.saldo)}</td><td>ORE</td></tr>
+        </table>
+      </div>
+      <div class="c" style="flex:1;padding:0">
+        <div style="display:flex;border-bottom:1px solid var(--bordo)"><div style="flex:1;padding:2px 5px" class="lab">TOTALE COMPETENZE</div><div class="num val" style="width:90px;padding:2px 5px">${fmt(c.totCompetenze)}</div></div>
+        <div style="display:flex;border-bottom:1px solid var(--bordo)"><div style="flex:1;padding:2px 5px" class="lab">TOTALE TRATTENUTE</div><div class="num val" style="width:90px;padding:2px 5px">${fmt(c.totTrattenute)}</div></div>
+        <div style="display:flex;border-bottom:1px solid var(--bordo)"><div style="flex:1;padding:2px 5px" class="lab">ARROTONDAMENTO</div><div class="num val" style="width:90px;padding:2px 5px">${fmt(c.arrotondamentoAttuale)}</div></div>
+        <div style="display:flex"><div style="flex:1;padding:2px 5px" class="lab">NETTO DEL MESE</div><div class="lul-netto" style="width:110px">${fmt(c.netto)}&nbsp;€</div></div>
+      </div>
+    </div>
+    <div class="r">
+      <div class="c" style="flex:1"><span class="lab">Comunicazioni</span>
+        <span class="val" style="font-weight:400;font-size:9px">Costo azienda stimato: contributi INPS c/ditta ${fmt(c.costoAzienda.contributiInps)} — INAIL ${fmt(c.costoAzienda.inail)} — quota TFR ${fmt(c.costoAzienda.quotaTfr)}${c.costoAzienda.quasAzienda ? ' — Qu.A.S. ' + fmt(c.costoAzienda.quasAzienda) : ''}${c.costoAzienda.quadriforAzienda ? ' — Quadrifor ' + fmt(c.costoAzienda.quadriforAzienda) : ''}${c.costoAzienda.fondoPensioneAzienda ? ' — F.do pens. ' + fmt(c.costoAzienda.fondoPensioneAzienda) : ''} — Totale ${fmt(c.costoAzienda.totale)} €</span></div>
+    </div>
+    <div class="lul-cred">BustaPaga — elaborazione ${new Date().toLocaleDateString('it-IT')} — ${esc(params.ccnl.nome)}</div>
+  </div>`;
+}
+
+// ---------------- archivio ----------------
+function renderArchivio() {
+  const azF = val('a_azienda'), dipF = val('a_dip'), annoF = val('a_anno');
+  const rows = buste
+    .filter(b => (!azF || b.aziendaId === azF) && (!dipF || b.dipId === dipF) && (!annoF || String(b.anno) === annoF))
+    .sort((a, b) => b.anno - a.anno || b.mese - a.mese);
+  const t = document.getElementById('archLista');
+  t.innerHTML = '<tr><th>Periodo</th><th>Azienda</th><th>Dipendente</th><th>Lordo €</th><th>Trattenute €</th><th>Netto €</th><th></th></tr>'
+    + rows.map(b => {
+      const az = aziende.find(a => a.id === b.aziendaId), d = dipendenti.find(x => x.id === b.dipId);
+      return `<tr><td>${MESI[b.mese - 1]} ${b.anno}</td><td>${esc(az ? az.ragioneSociale : b.aziendaId)}</td>
+        <td>${esc(d ? d.cognome + ' ' + d.nome : b.dipId)}</td>
+        <td class="num">${fmt(b.calc.totCompetenze)}</td><td class="num">${fmt(b.calc.totTrattenute)}</td>
+        <td class="num"><b>${fmt(b.calc.netto)}</b></td>
+        <td><button class="b sec" onclick="vediBusta('${b.key}')">Vedi</button>
+            <button class="b" onclick="stampaArchivio('${b.key}')">Stampa</button>
+            <button class="b warn" onclick="delBusta('${b.key}')">Elimina</button></td></tr>`;
+    }).join('');
+}
+function vediBusta(key) {
+  const b = buste.find(x => x.key === key); if (!b) return;
+  const az = aziende.find(a => a.id === b.aziendaId), d = dipendenti.find(x => x.id === b.dipId);
+  document.getElementById('archViewWrap').style.display = 'block';
+  document.getElementById('archView').innerHTML = renderLUL(az || {}, d || {}, b.input, b.calc);
+  document.getElementById('archViewWrap').scrollIntoView({ behavior: 'smooth' });
+}
+function stampaArchivio(key) {
+  const b = buste.find(x => x.key === key); if (!b) return;
+  const az = aziende.find(a => a.id === b.aziendaId), d = dipendenti.find(x => x.id === b.dipId);
+  stampaHTML(renderLUL(az || {}, d || {}, b.input, b.calc));
+}
+function delBusta(key) {
+  if (!confirm('Eliminare la busta dall\'archivio?')) return;
+  buste = buste.filter(b => b.key !== key); save(LS.buste, buste); renderArchivio();
+}
+function esportaDati() {
+  const blob = new Blob([JSON.stringify({ aziende, dipendenti, buste, params }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bustapaga_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+}
+function importaDati(ev) {
+  const f = ev.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!confirm('Importare il backup? I dati attuali verranno sostituiti.')) return;
+      aziende = d.aziende || []; dipendenti = d.dipendenti || []; buste = d.buste || [];
+      if (d.params) params = d.params;
+      save(LS.az, aziende); save(LS.dip, dipendenti); save(LS.buste, buste); save(LS.par, params);
+      refreshAll(); alert('Backup importato.');
+    } catch (e) { alert('File non valido: ' + e.message); }
+  };
+  r.readAsText(f);
+}
+
+// ---------------- prospetto CU ----------------
+function popolaDipCU() { opzioniDip('c_dip', val('c_azienda')); }
+function renderCU() {
+  const dip = dipendenti.find(d => d.id === val('c_dip'));
+  const anno = parseInt(val('c_anno'));
+  const out = document.getElementById('cuOut');
+  if (!dip || !anno) { out.innerHTML = '<p class="err">Selezionare dipendente e anno.</p>'; return; }
+  const cu = E.prospettoCU(params, dip, anno, busteDi(dip.id).map(b => b.calc));
+  if (!cu) { out.innerHTML = '<p class="err">Nessuna busta in archivio per l\'anno ' + anno + '.</p>'; return; }
+  const riga = (punto, descr, v, dec) => `<tr><td>${punto}</td><td>${descr}</td><td class="num">${fmt(v, dec == null ? 2 : dec)}</td></tr>`;
+  out.innerHTML = `
+    <h3 style="color:var(--blu)">Prospetto CU ${anno + 1} — redditi ${anno} — ${esc(dip.cognome)} ${esc(dip.nome)}</h3>
+    <table class="lista" style="max-width:700px">
+      <tr><th>Punto CU</th><th>Descrizione</th><th style="text-align:right">Importo €</th></tr>
+      ${riga('1', 'Redditi di lavoro dipendente — tempo indeterminato', cu.p1_redditoLavoroDipTI)}
+      ${riga('2', 'Redditi di lavoro dipendente — tempo determinato', cu.p2_redditoLavoroDipTD)}
+      ${riga('6', 'Numero giorni per detrazioni (lavoro dipendente)', cu.p6_giorniDetrazione, 0)}
+      ${riga('21', 'Ritenute IRPEF', cu.p21_ritenuteIrpef)}
+      ${riga('22', 'Addizionale regionale IRPEF', cu.p22_addRegionale)}
+      ${riga('26', 'Addizionale comunale IRPEF (saldo)', cu.p26_addComunale)}
+      ${riga('29', 'Acconto addizionale comunale anno successivo', cu.p29_accontoComunale)}
+      ${riga('—', 'IRPEF lorda', cu.irpefLorda)}
+      ${riga('367', 'Detrazioni per lavoro dipendente', cu.p367_detrazioniLavoro)}
+      ${riga('390-391', 'Somma integrativa L.207/2024 erogata', cu.p390_sommaIntegrativa)}
+      ${riga('400-401', 'Trattamento integrativo L.21/2020 erogato', cu.p400_trattIntegrativo)}
+      ${riga('474', 'Fringe benefit erogati', cu.p441_fringeBenefit)}
+      ${riga('—', 'Imponibile previdenziale INPS', cu.imponibileInps)}
+      ${riga('—', 'Contributi previdenziali c/dipendente', cu.contributiDip)}
+      ${riga('441', 'Contributi sanità integrativa (Qu.A.S./EST) c/dip.', cu.contributiSanitaDip)}
+      ${riga('412', 'Previdenza complementare c/dipendente', cu.previdenzaComplDip)}
+      ${riga('—', 'Quote TFR maturate nell\'anno', cu.tfrQuoteAnno)}
+      ${riga('—', 'TFR versato a fondo pensione', cu.tfrAFondoPensione)}
+      ${riga('—', 'Totale competenze lorde erogate', cu.totaleCompetenze)}
+      ${riga('—', 'Totale netto corrisposto', cu.totaleNetto)}
+    </table>
+    <h4 style="color:var(--blu)">Dettaglio mensile</h4>
+    <table class="lista" style="max-width:700px">
+      <tr><th>Mese</th><th style="text-align:right">Imponibile IRPEF</th><th style="text-align:right">Imponibile INPS</th>
+      <th style="text-align:right">IRPEF</th><th style="text-align:right">Netto</th></tr>
+      ${cu.mesi.map(m => `<tr><td>${MESI[m.mese - 1]}</td><td class="num">${fmt(m.imponibileFiscale)}</td>
+        <td class="num">${fmt(m.imponibileInps)}</td><td class="num">${fmt(m.irpefNetta)}</td><td class="num">${fmt(m.netto)}</td></tr>`).join('')}
+    </table>`;
+}
+
+// ---------------- parametri ----------------
+function renderParams() { document.getElementById('paramsJson').value = JSON.stringify(params, null, 2); }
+function salvaParams() {
+  try {
+    params = JSON.parse(document.getElementById('paramsJson').value);
+    save(LS.par, params);
+    document.getElementById('p_err').textContent = '';
+    alert('Parametri salvati.');
+  } catch (e) { document.getElementById('p_err').textContent = 'JSON non valido: ' + e.message; }
+}
+function resetParams() {
+  if (!confirm('Ripristinare i parametri di default?')) return;
+  params = JSON.parse(JSON.stringify(E.DEFAULT_PARAMS));
+  save(LS.par, params); renderParams();
+}
+
+// ---------------- refresh ----------------
+function refreshAll() {
+  renderAziende(); renderDipendenti();
+  opzioniAziende('d_azienda'); opzioniAziende('e_azienda'); opzioniAziende('a_azienda', true); opzioniAziende('c_azienda');
+  opzioniDip('e_dip', val('e_azienda')); opzioniDip('a_dip', val('a_azienda'), true); opzioniDip('c_dip', val('c_azienda'));
+  const anni = [...new Set(buste.map(b => b.anno))].sort((a, b) => b - a);
+  document.getElementById('a_anno').innerHTML = '<option value="">— Tutti —</option>' + anni.map(a => `<option>${a}</option>`).join('');
+  renderArchivio(); renderParams();
+}
+// init
+(function () {
+  const oggi = new Date();
+  set('e_anno', oggi.getFullYear()); set('c_anno', oggi.getFullYear());
+  document.getElementById('e_mese').innerHTML = MESI.map((m, i) => `<option value="${i + 1}"${i === oggi.getMonth() ? ' selected' : ''}>${m}</option>`).join('');
+  refreshAll(); precompilaElabora();
+})();
+</script>
+</body>
+</html>
