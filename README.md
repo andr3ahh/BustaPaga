@@ -8,6 +8,25 @@ dell'esempio fornito (ASD Eventi Sportivi Palmanova).
 
 ## Avvio
 
+### Online (GitHub Pages)
+
+Il repository include un workflow (`.github/workflows/deploy-pages.yml`) che pubblica
+automaticamente il sistema come sito web a ogni push:
+
+**https://andr3ahh.github.io/BustaPaga/**
+
+Requisiti una tantum:
+1. **Repository pubblico** (con il piano GitHub gratuito Pages non funziona sui repo privati:
+   Settings → General → Danger Zone → Change visibility), oppure piano Pro/Team.
+2. Se il primo deploy non parte da solo: Settings → **Pages** → Source: **GitHub Actions**,
+   poi rilanciare il workflow dalla scheda Actions.
+
+Nota privacy: su GitHub è pubblicato **solo il codice del sistema**. I dati inseriti
+(aziende, dipendenti, buste paga) restano esclusivamente nel browser di chi lo usa
+(localStorage) e non vengono mai inviati a GitHub o ad altri server.
+
+### In locale (senza internet)
+
 1. Scaricare i file `index.html` e `payroll-engine.js` nella stessa cartella.
 2. Aprire `index.html` con un browser (Chrome/Edge/Firefox).
 3. I dati sono salvati automaticamente nel browser (localStorage). Usare
