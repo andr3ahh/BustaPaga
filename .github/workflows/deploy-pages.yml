@@ -25,14 +25,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Build sito protetto da password (AES-256, StatiCrypt)
+        env:
+          STATICRYPT_PASSWORD: ${{ secrets.PAGES_PASSWORD }}
+        run: |
+          if [ -z "$STATICRYPT_PASSWORD" ]; then
+            echo "::error::Manca il secret PAGES_PASSWORD: Settings -> Secrets and variables -> Actions -> New repository secret (nome PAGES_PASSWORD, valore = password di accesso al sito)."
+            exit 1
+          fi
+          node build-protetto.js
+          npx --yes staticrypt dist/index.html -d dist-enc --remember 30 \
+            --template-title "BustaPaga — Accesso riservato" \
+            --template-instructions "Inserire la password per accedere al sistema" \
+            --template-button "Entra"
+          echo "Pagina cifrata generata:" && ls -la dist-enc/
       - name: Configura Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Carica sito statico
+      - name: Carica sito cifrato
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: 'dist-enc'
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

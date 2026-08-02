@@ -15,13 +15,24 @@ automaticamente il sistema come sito web a ogni push:
 
 **https://andr3ahh.github.io/BustaPaga/**
 
+Il sito pubblicato è **protetto da password**: la pagina viene cifrata in AES-256
+([StatiCrypt](https://github.com/robinmoisson/staticrypt)) durante il deploy e all'apertura
+chiede la password di accesso; senza password il contenuto è un blob crittografato illeggibile.
+La spunta "ricordami" evita di reinserirla per 30 giorni sullo stesso browser.
+
 Requisiti una tantum:
-1. **Repository pubblico** (con il piano GitHub gratuito Pages non funziona sui repo privati:
+1. **Password di accesso**: Settings → **Secrets and variables** → **Actions** →
+   **New repository secret** → nome `PAGES_PASSWORD`, valore = la password scelta
+   (senza questo secret il deploy si ferma con errore esplicito).
+2. **Repository pubblico** (con il piano GitHub gratuito Pages non funziona sui repo privati:
    Settings → General → Danger Zone → Change visibility), oppure piano Pro/Team.
-2. Se il primo deploy non parte da solo: Settings → **Pages** → Source: **GitHub Actions**,
+3. Se il primo deploy non parte da solo: Settings → **Pages** → Source: **GitHub Actions**,
    poi rilanciare il workflow dalla scheda Actions.
 
-Nota privacy: su GitHub è pubblicato **solo il codice del sistema**. I dati inseriti
+Per cambiare password: aggiornare il secret `PAGES_PASSWORD` e rilanciare il workflow.
+
+Note privacy: su GitHub è pubblicato **solo il codice del sistema** (visibile nel repo se
+pubblico); il **sito** invece è accessibile solo con la password. I dati inseriti
 (aziende, dipendenti, buste paga) restano esclusivamente nel browser di chi lo usa
 (localStorage) e non vengono mai inviati a GitHub o ad altri server.
 
