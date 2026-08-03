@@ -12,7 +12,7 @@ function eq(nome, avuto, atteso, tol = 0.02) {
   pass ? ok++ : ko++;
 }
 
-const azienda = { ragioneSociale: 'ASD EVENTI SPORTIVI PALMANOVA', dimensione: 'fino5', inailTasso: 5 };
+const azienda = { ragioneSociale: 'AZIENDA DI PROVA', dimensione: 'fino5', inailTasso: 5 };
 
 console.log('== TEST 1: elementi retributivi Quadro — riscontro LUL reale (Savills 05/2025) ==');
 {

@@ -3,8 +3,10 @@
 Sistema **HTML** (nessuna installazione: si apre `index.html` nel browser) per calcolare,
 generare, archiviare e ristampare buste paga secondo il **CCNL Terziario, Distribuzione e
 Servizi — Confcommercio (CNEL H011)**, con focus sul **livello Quadro**.
-La grafica del cedolino replica il Libro Unico del Lavoro in stile Zucchetti
-dell'esempio fornito (ASD Eventi Sportivi Palmanova).
+La grafica del cedolino replica il Libro Unico del Lavoro in stile Zucchetti.
+
+Il sistema non contiene dati di aziende o dipendenti: l'anagrafica si inserisce
+al primo avvio e resta nel browser di chi lo usa.
 
 ## Avvio
 
