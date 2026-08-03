@@ -96,14 +96,14 @@
     <h2 id="azFormTitle">Nuova azienda</h2>
     <form id="azForm" class="grid g3">
       <input type="hidden" id="az_id">
-      <label class="f">Codice azienda<input id="az_codice" placeholder="000293"></label>
-      <label class="f" style="grid-column: span 2">Ragione sociale *<input id="az_ragione" required placeholder="ASD EVENTI SPORTIVI PALMANOVA"></label>
-      <label class="f" style="grid-column: span 2">Indirizzo (via e civico)<input id="az_indirizzo" placeholder="VIA GRADO 5"></label>
-      <label class="f">CAP, Città (Prov)<input id="az_citta" placeholder="33057 PALMANOVA (UD)"></label>
-      <label class="f">Codice fiscale<input id="az_cf" placeholder="02379760305"></label>
+      <label class="f">Codice azienda<input id="az_codice" placeholder="000001"></label>
+      <label class="f" style="grid-column: span 2">Ragione sociale *<input id="az_ragione" required placeholder="Ragione sociale"></label>
+      <label class="f" style="grid-column: span 2">Indirizzo (via e civico)<input id="az_indirizzo" placeholder="Via e numero civico"></label>
+      <label class="f">CAP, Città (Prov)<input id="az_citta" placeholder="00000 CITTA' (XX)"></label>
+      <label class="f">Codice fiscale<input id="az_cf" placeholder="00000000000"></label>
       <label class="f">Partita IVA<input id="az_piva"></label>
-      <label class="f">Posizione INPS (matricola)<input id="az_inps" placeholder="8609093317/00"></label>
-      <label class="f">P.A.T. INAIL<input id="az_pat" placeholder="097385659/03"></label>
+      <label class="f">Posizione INPS (matricola)<input id="az_inps" placeholder="0000000000/00"></label>
+      <label class="f">P.A.T. INAIL<input id="az_pat" placeholder="000000000/00"></label>
       <label class="f">Voce di tariffa INAIL<input id="az_vocetariffa" placeholder="0722"></label>
       <label class="f">Tasso INAIL (per mille)<input id="az_tassoinail" type="number" step="0.01" placeholder="5.00"></label>
       <label class="f">Dimensione azienda (per aliquote FIS/CIGS)
@@ -113,7 +113,7 @@
           <option value="da16a50">Da 16 a 50 dipendenti</option>
           <option value="oltre50">Oltre 50 dipendenti</option>
         </select></label>
-      <label class="f">Sede di lavoro<input id="az_sede" placeholder="SEDE DI PALMANOVA"></label>
+      <label class="f">Sede di lavoro<input id="az_sede" placeholder="Sede operativa"></label>
       <label class="f">Autorizzazione LUL (n. e data)<input id="az_aut" placeholder="Aut. 41919 del 29-01-2009"></label>
       <label class="f">Note legali / rappresentante<input id="az_note"></label>
     </form>
@@ -308,14 +308,8 @@ let dipendenti = load(LS.dip, []);
 let buste = load(LS.buste, []);
 let params = load(LS.par, null) || JSON.parse(JSON.stringify(E.DEFAULT_PARAMS));
 
-// prima esecuzione: precarica l'azienda dell'esempio
-if (!aziende.length && !localStorage.getItem('bp_init')) {
-  aziende.push({ id: 'az1', codice: '000293', ragioneSociale: 'ASD EVENTI SPORTIVI PALMANOVA',
-    indirizzo: 'VIA GRADO 5', citta: '33057 PALMANOVA (UD)', cf: '02379760305', piva: '',
-    posInps: '8609093317/00', patInail: '097385659/03', voceTariffa: '0722', inailTasso: 5,
-    dimensione: 'fino5', sede: 'SEDE DI PALMANOVA', aut: '', note: '' });
-  save(LS.az, aziende); localStorage.setItem('bp_init', '1');
-}
+// Nessuna azienda precaricata: i dati identificativi si inseriscono dalla scheda
+// Aziende al primo avvio e restano solo nel browser di chi usa il sistema.
 
 const MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 const fmt = (n, d = 2) => (n == null || isNaN(n)) ? '' : Number(n).toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d });

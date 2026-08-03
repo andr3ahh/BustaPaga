@@ -34,10 +34,13 @@ jobs:
             exit 1
           fi
           node build-protetto.js
-          npx --yes staticrypt dist/index.html -d dist-enc --remember 30 \
+          # --short: accetta password sotto i 14 caratteri senza chiedere conferma
+          # interattiva, che in CI non potrebbe essere data e farebbe fallire il job.
+          npx --yes staticrypt dist/index.html -d dist-enc --short --remember 30 \
             --template-title "BustaPaga — Accesso riservato" \
             --template-instructions "Inserire la password per accedere al sistema" \
-            --template-button "Entra"
+            --template-button "Entra" < /dev/null
+          test -s dist-enc/index.html || { echo "::error::Cifratura non riuscita: dist-enc/index.html non generato."; exit 1; }
           echo "Pagina cifrata generata:" && ls -la dist-enc/
       - name: Configura Pages
         uses: actions/configure-pages@v5
