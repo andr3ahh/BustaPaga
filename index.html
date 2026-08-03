@@ -301,8 +301,33 @@
 'use strict';
 const E = PayrollEngine;
 const LS = { az: 'bp_aziende', dip: 'bp_dipendenti', buste: 'bp_buste', par: 'bp_params' };
-const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
-const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+// Archivio locale: usa localStorage quando il browser lo consente, altrimenti
+// tiene i dati in memoria per la sessione corrente (in quel caso il salvataggio
+// permanente avviene tramite Archivio -> Esporta backup JSON).
+const memoria = {};
+let archivioPersistente = true;
+try { localStorage.setItem('bp_test', '1'); localStorage.removeItem('bp_test'); }
+catch (e) { archivioPersistente = false; }
+const load = (k, d) => {
+  try { return JSON.parse(archivioPersistente ? localStorage.getItem(k) : memoria[k]) || d; }
+  catch (e) { return d; }
+};
+const save = (k, v) => {
+  const s = JSON.stringify(v);
+  memoria[k] = s;
+  if (!archivioPersistente) return;
+  try { localStorage.setItem(k, s); }
+  catch (e) { archivioPersistente = false; avvisaArchivio(); }
+};
+function avvisaArchivio() {
+  if (document.getElementById('avvisoArchivio')) return;
+  const d = document.createElement('div');
+  d.id = 'avvisoArchivio';
+  d.style.cssText = 'background:#fff4d6;border-bottom:1px solid #e0b400;padding:8px 18px;font-size:13px;color:#5a4500';
+  d.textContent = 'Questo browser non consente il salvataggio permanente: i dati restano solo per la sessione corrente. '
+    + 'Usare Archivio → Esporta backup JSON per conservarli, e Importa backup per riaprirli.';
+  document.body.insertBefore(d, document.body.firstChild);
+}
 let aziende = load(LS.az, []);
 let dipendenti = load(LS.dip, []);
 let buste = load(LS.buste, []);
@@ -819,6 +844,7 @@ function refreshAll() {
   set('e_anno', oggi.getFullYear()); set('c_anno', oggi.getFullYear());
   document.getElementById('e_mese').innerHTML = MESI.map((m, i) => `<option value="${i + 1}"${i === oggi.getMonth() ? ' selected' : ''}>${m}</option>`).join('');
   refreshAll(); precompilaElabora();
+  if (!archivioPersistente) avvisaArchivio();
 })();
 </script>
 </body>
