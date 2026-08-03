@@ -365,21 +365,21 @@
     const giorniRetribuiti = (input.giorniRetribuiti != null) ? input.giorniRetribuiti : cc.divisoreGiornaliero;
     const quotaMese = giorniRetribuiti >= cc.divisoreGiornaliero ? 1 : giorniRetribuiti / cc.divisoreGiornaliero;
     const retribOrdinaria = r2(el.totale * quotaMese);
-    add({ cod: '0001', descr: 'Retribuzione ordinaria', um: 'GG', qta: giorniRetribuiti,
+    add({ cod: 'Z00001', descr: 'Retribuzione', dec5: true, um: 'GG', qta: giorniRetribuiti,
           base: el.giornaliera, competenza: retribOrdinaria, C: 1, I: 1, T: 1 });
 
     // voci informative presenze (non modificano il lordo: retribuzione mensilizzata)
-    if (input.ferieGodute)   add({ cod: '0200', descr: 'Ferie godute', um: 'GG', qta: input.ferieGodute, base: el.giornaliera, C:0,I:0,T:0, info: true });
-    if (input.rolGodute)     add({ cod: '0221', descr: 'Permessi (ROL) goduti', um: 'ORE', qta: input.rolGodute, base: el.oraria, C:0,I:0,T:0, info: true });
-    if (input.exFestGodute)  add({ cod: '0222', descr: "Permessi ex-festivita' goduti", um: 'ORE', qta: input.exFestGodute, base: el.oraria, C:0,I:0,T:0, info: true });
-    if (input.festivita)     add({ cod: '0230', descr: "Festivita'", um: 'GG', qta: input.festivita, base: el.giornaliera, C:0,I:0,T:0, info: true });
+    if (input.ferieGodute)   add({ cod: 'Z00250', descr: 'Ferie godute', dec5: true, um: 'GG', qta: input.ferieGodute, base: el.giornaliera, C:0,I:0,T:0, info: true });
+    if (input.rolGodute)     add({ cod: 'Z00252', descr: 'Permessi Rol goduti', dec5: true, um: 'ORE', qta: input.rolGodute, base: el.oraria, C:0,I:0,T:0, info: true });
+    if (input.exFestGodute)  add({ cod: 'Z00253', descr: "Permessi Ex-Fs goduti", dec5: true, um: 'ORE', qta: input.exFestGodute, base: el.oraria, C:0,I:0,T:0, info: true });
+    if (input.festivita)     add({ cod: 'Z00230', descr: "Festivita'", dec5: true, um: 'GG', qta: input.festivita, base: el.giornaliera, C:0,I:0,T:0, info: true });
 
     // ---------- straordinari ----------
     const st = cc.maggiorazioni;
     const straord = [
-      ['0301', 'Straordinario feriale',  input.oreStraordinario,  st.straordinario],
-      ['0302', 'Straordinario festivo',  input.oreStraordFestivo, st.festivo],
-      ['0303', 'Straordinario notturno', input.oreStraordNotturno, st.notturno]
+      ['Z01001', 'Straordinario feriale',  input.oreStraordinario,  st.straordinario],
+      ['Z01002', 'Straordinario festivo',  input.oreStraordFestivo, st.festivo],
+      ['Z01003', 'Straordinario notturno', input.oreStraordNotturno, st.notturno]
     ];
     for (const [cod, descr, ore, magg] of straord) {
       if (ore > 0) {
@@ -394,17 +394,17 @@
     if (mese === 12 || (input.cessazione && mese !== 7)) {
       const q = (mese === 12 ? mesiRateo : mesiRateo) / 12;
       const imp = r2(el.totale * q);
-      if (imp > 0) add({ cod: '0500', descr: "13ma Mensilita'", um: 'MESI', qta: r2(q * 12), base: r5(el.totale / 12), competenza: imp, C:1, I:1, T:1 });
+      if (imp > 0) add({ cod: 'Z50000', descr: "13ma Mensilita'", um: 'MESI', qta: r2(q * 12), base: r5(el.totale / 12), competenza: imp, C:1, I:1, T:1 });
     }
     if (mese === 7 || (input.cessazione && mese !== 12)) {
       const mesi14 = mesi14Maturati(emp, anno, mese, input.cessazione);
       const imp = r2(el.totale * mesi14 / 12);
-      if (imp > 0) add({ cod: '0501', descr: "14ma Mensilita'", um: 'MESI', qta: mesi14, base: r5(el.totale / 12), competenza: imp, C:1, I:1, T:1 });
+      if (imp > 0) add({ cod: 'Z50002', descr: "14ma Mensilita'", um: 'MESI', qta: mesi14, base: r5(el.totale / 12), competenza: imp, C:1, I:1, T:1 });
     }
 
     // ---------- bonus / una tantum ----------
     if (input.bonus > 0)
-      add({ cod: '0600', descr: input.bonusDescrizione || 'Bonus / una tantum', competenza: r2(input.bonus), C:1, I:1, T: input.bonusInTfr ? 1 : 0 });
+      add({ cod: 'Z00600', descr: input.bonusDescrizione || 'Bonus / una tantum', competenza: r2(input.bonus), C:1, I:1, T: input.bonusInTfr ? 1 : 0 });
 
     // ---------- buoni pasto ----------
     let bpEccedenza = 0, bpTotale = 0;
@@ -415,21 +415,21 @@
       bpTotale = r2(input.buoniPastoGiorni * input.buoniPastoValore);
       const quotaEsente = Math.min(input.buoniPastoValore, esente);
       bpEccedenza = r2(input.buoniPastoGiorni * Math.max(0, input.buoniPastoValore - esente));
-      add({ cod: '0140', descr: `Buoni pasto ${input.buoniPastoTipo || 'elettronici'} esenti (fino a ${esente.toFixed(2)} E)`,
+      add({ cod: 'Z00140', descr: `Buoni pasto ${input.buoniPastoTipo || 'elettronici'} esenti (fino a ${esente.toFixed(2)} E)`,
             um: 'GG', qta: input.buoniPastoGiorni, base: quotaEsente,
             competenza: r2(bpTotale - bpEccedenza), C:0, I:0, T:0, N:0, figurativa: true });
       if (bpEccedenza > 0)
-        add({ cod: '0141', descr: 'Buoni pasto quota eccedente', competenza: bpEccedenza, C:1, I:1, T:0, N:0, figurativa: true });
+        add({ cod: 'Z00141', descr: 'Buoni pasto quota eccedente', competenza: bpEccedenza, C:1, I:1, T:0, N:0, figurativa: true });
     }
 
     // ---------- fringe benefit (statistico: concorre se oltre soglia — semplificato: imponibile se flag) ----------
     if (input.fringeBenefit > 0)
-      add({ cod: '0921', descr: 'Valore fringe benefits', competenza: r2(input.fringeBenefit),
+      add({ cod: 'Z00921', descr: 'Valore fringe benefits', competenza: r2(input.fringeBenefit),
             C: input.fringeBenefitImponibile ? 1 : 0, I: input.fringeBenefitImponibile ? 1 : 0, T:0, N:0, figurativa: true });
 
     // ---------- note spese (rimborsi documentati, esenti) ----------
     if (input.noteSpese > 0)
-      add({ cod: '0156', descr: 'Rimborso spese documentate', competenza: r2(input.noteSpese), C:0, I:0, T:0, N:1 });
+      add({ cod: 'Z00156', descr: 'Rimborso spese documentate', competenza: r2(input.noteSpese), C:0, I:0, T:0, N:1 });
 
     // ============================================================
     // IMPONIBILE PREVIDENZIALE E CONTRIBUTI
@@ -461,21 +461,34 @@
       contributoAggiuntivo = r2(Math.max(0, eccedenzaMese) * params.inps.aliquotaAggiuntiva / 100);
     }
 
-    add({ cod: '5001', descr: `Contributi INPS c/dip. ${aliqDip.toFixed(4).replace('.', ',')}%`,
-          rif: imponibileInps, trattenuta: contributiIvs });
+    // Voci contributive esposte separatamente, come nel LUL: importo base = imponibile,
+    // riferimento = aliquota applicata, trattenuta = contributo.
+    const aliqFis = dimensione === 'fino5' ? params.inps.fisDipendente.fino5 : params.inps.fisDipendente.oltre5;
+    const aliqCigs = dimensione === 'oltre50' ? params.inps.cigsDipendente : 0;
+    const quotaFis = r2(imponibileInps * aliqFis / 100);
+    const quotaCigs = r2(imponibileInps * aliqCigs / 100);
+    const quotaIvs = r2(contributiIvs - quotaFis - quotaCigs);
+    add({ cod: 'Z00133', descr: `FIS D.Lgs.148/2015 ${dimensione === 'fino5' ? '<5 dip.' : '>5 dip.'}`,
+          base: imponibileInps, qta: aliqFis, um: '%', trattenuta: quotaFis });
+    add({ cod: 'Z00800', descr: 'I.V.S. c/dipendente',
+          base: imponibileInps, qta: params.inps.ivsDipendente, um: '%', trattenuta: quotaIvs });
+    if (quotaCigs > 0)
+      add({ cod: 'Z00810', descr: 'CIGS c/dipendente',
+            base: imponibileInps, qta: aliqCigs, um: '%', trattenuta: quotaCigs });
     if (contributoAggiuntivo > 0)
-      add({ cod: '5002', descr: 'Contributo aggiuntivo IVS 1%', trattenuta: contributoAggiuntivo });
+      add({ cod: 'Z00801', descr: 'Contributo aggiuntivo I.V.S.',
+            qta: params.inps.aliquotaAggiuntiva, um: '%', trattenuta: contributoAggiuntivo });
 
     // ---------- fondi contrattuali ----------
     let trattFondi = 0, quasDip = 0, quadriforDip = 0, estDip = 0;
     const liv = emp.livello || 'QUADRO';
     if (emp.quas === undefined) emp.quas = (liv === 'QUADRO');
     if (liv === 'QUADRO') {
-      if (emp.quas)      { quasDip = r2(params.fondi.quas.dipAnnuo / 12);      add({ cod: '5101', descr: 'Contributo Qu.A.S. c/dip.', trattenuta: quasDip }); }
-      if (emp.quadrifor !== false) { quadriforDip = r2(params.fondi.quadrifor.dipAnnuo / 12); add({ cod: '5102', descr: 'Contributo Quadrifor c/dip.', trattenuta: quadriforDip }); }
+      if (emp.quas)      { quasDip = r2(params.fondi.quas.dipAnnuo / 12);      add({ cod: 'Z31010', descr: 'Contributo Qu.A.S.', trattenuta: quasDip }); }
+      if (emp.quadrifor !== false) { quadriforDip = r2(params.fondi.quadrifor.dipAnnuo / 12); add({ cod: 'Z31020', descr: 'Contributo Quadrifor', trattenuta: quadriforDip }); }
     } else if (emp.fondoEst !== false) {
       estDip = params.fondi.est.dipMensile;
-      add({ cod: '5103', descr: 'Contributo Fondo EST c/dip.', trattenuta: estDip });
+      add({ cod: 'Z31000', descr: 'Contributo Fondo EST', trattenuta: estDip });
     }
     trattFondi = r2(quasDip + quadriforDip + estDip);
 
@@ -485,7 +498,7 @@
     if (emp.fondoPensione) {
       fpDip = r2(retribUtileTfrMese * (emp.fondoPensioneDipPct != null ? emp.fondoPensioneDipPct : params.fondi.fondoPensione.dipPct) / 100);
       fpAzienda = r2(retribUtileTfrMese * (emp.fondoPensioneAzPct != null ? emp.fondoPensioneAzPct : params.fondi.fondoPensione.aziendaPct) / 100);
-      if (fpDip > 0) add({ cod: '5201', descr: 'Contributo fondo pensione c/dip.', trattenuta: fpDip });
+      if (fpDip > 0) add({ cod: 'ZP8138', descr: 'Trattenuta fondo pensione', trattenuta: fpDip });
     }
 
     // ============================================================
@@ -496,7 +509,7 @@
     const quotaTfrNetta = r2(quotaTfrLorda - fapMese);
     if (emp.fondoPensione && (emp.tfrAFondoPct == null || emp.tfrAFondoPct > 0)) {
       tfrAFondo = r2(quotaTfrNetta * ((emp.tfrAFondoPct != null ? emp.tfrAFondoPct : params.fondi.fondoPensione.tfrPct) / 100));
-      add({ cod: '0081', descr: 'Quota TFR a F.do Pensione', competenza: tfrAFondo, C:0, I:0, T:0, N:0, figurativa: true });
+      add({ cod: 'ZP8134', descr: 'Quota T.F.R. a F.do Pensione', competenza: tfrAFondo, C:0, I:0, T:0, N:0, figurativa: true });
     }
 
     // ============================================================
@@ -523,19 +536,19 @@
     let sommaIntegr = 0;
     if (siPct > 0) {
       sommaIntegr = r2(imponibileFiscale * siPct / 100);
-      add({ cod: '0701', descr: `Somma integrativa L.207/24 (${siPct}%)`, competenza: sommaIntegr, C:0, I:0, T:0, N:1 });
+      add({ cod: 'F09586', descr: `Indennita' L.207/24 (${siPct}%)`, competenza: sommaIntegr, C:0, I:0, T:0, N:1 });
     }
     // trattamento integrativo (RC ≤ 15.000, salvo conguaglio)
     let trattIntegr = 0;
     if (redditoAnnuo <= 15000 && irpefLordaAnnua(params, anno, redditoAnnuo) > detrLavAnnua) {
       trattIntegr = r2(params.irpef.trattamentoIntegrativo * ggDetrazione / 365);
-      add({ cod: '0702', descr: 'Trattamento integrativo L.21/2020', competenza: trattIntegr, C:0, I:0, T:0, N:1 });
+      add({ cod: 'F09585', descr: 'Tratt. integrativo L.21/2020', competenza: trattIntegr, C:0, I:0, T:0, N:1 });
     }
 
-    add({ cod: 'F020', descr: 'Imponibile IRPEF', rif: imponibileFiscale, figurativa: true });
-    add({ cod: 'F021', descr: 'IRPEF lorda', rif: irpefLordaMese, figurativa: true });
-    if (detrTot > 0) add({ cod: 'F025', descr: 'Detrazioni lav. dipendente', rif: detrTot, figurativa: true });
-    add({ cod: 'F030', descr: 'Ritenute IRPEF', trattenuta: irpefNettaMese });
+    add({ cod: 'F02000', descr: 'Imponibile IRPEF', base: imponibileFiscale, figurativa: true });
+    add({ cod: 'F02010', descr: 'IRPEF lorda', base: irpefLordaMese, figurativa: true });
+    if (detrTot > 0) add({ cod: 'F02500', descr: 'Detrazioni lav.dip.', base: detrTot, figurativa: true });
+    add({ cod: 'F03020', descr: 'Ritenute IRPEF', trattenuta: irpefNettaMese });
 
     // ============================================================
     // ADDIZIONALI (rate da conguaglio anno precedente)
@@ -543,9 +556,9 @@
     let rataReg = input.rataAddRegionale || 0;
     let rataCom = input.rataAddComunale || 0;
     let rataAccCom = input.rataAccontoComunale || 0;
-    if (rataReg > 0)   add({ cod: '5301', descr: `Rata add.regionale ${params.addizionali.regionale.nome}`, trattenuta: r2(rataReg) });
-    if (rataCom > 0)   add({ cod: '5302', descr: `Rata add.comunale ${params.addizionali.comunale.nome}`, trattenuta: r2(rataCom) });
-    if (rataAccCom > 0) add({ cod: '5303', descr: 'Rata acconto add.comunale', trattenuta: r2(rataAccCom) });
+    if (rataReg > 0)   add({ cod: 'F09610', descr: `Rata add.reg. ${params.addizionali.regionale.nome}`, trattenuta: r2(rataReg) });
+    if (rataCom > 0)   add({ cod: 'F09620', descr: `Rata add.com. ${params.addizionali.comunale.nome}`, trattenuta: r2(rataCom) });
+    if (rataAccCom > 0) add({ cod: 'F09630', descr: 'Rata acconto add.com.', trattenuta: r2(rataAccCom) });
 
     // ============================================================
     // CONGUAGLIO DI FINE ANNO (dicembre o cessazione)
@@ -563,8 +576,8 @@
       const nettaAnnua = r2(Math.max(0, lordaAnnua - detrAnnua));
       const diff = r2(nettaAnnua - irpefTrattenuta - irpefNettaMese);
       if (Math.abs(diff) >= 0.01) {
-        if (diff > 0) add({ cod: '5401', descr: 'Conguaglio IRPEF a debito', trattenuta: diff });
-        else add({ cod: '5402', descr: 'Conguaglio IRPEF a credito', competenza: -diff, C:0, I:0, T:0, N:1 });
+        if (diff > 0) add({ cod: 'F04000', descr: 'Conguaglio IRPEF a debito', trattenuta: diff });
+        else add({ cod: 'F04010', descr: 'Conguaglio IRPEF a credito', competenza: -diff, C:0, I:0, T:0, N:1 });
       }
       const addReg = addizionaleRegionale(params, impFiscAnnuo);
       const addCom = addizionaleComunale(params, impFiscAnnuo);
@@ -576,8 +589,8 @@
                      accontoComunale: r2(addCom * params.addizionali.comunale.acconto / 100), giorniDetrazione: ggDetrAnno };
       if (input.cessazione) {
         // addizionali trattenute in unica soluzione a cessazione
-        if (addReg > 0) add({ cod: '5403', descr: `Add.regionale ${params.addizionali.regionale.nome} (cessazione)`, trattenuta: addReg });
-        if (addCom > 0) add({ cod: '5404', descr: `Add.comunale ${params.addizionali.comunale.nome} (cessazione)`, trattenuta: addCom });
+        if (addReg > 0) add({ cod: 'F09611', descr: `Add.reg. ${params.addizionali.regionale.nome} (cessazione)`, trattenuta: addReg });
+        if (addCom > 0) add({ cod: 'F09621', descr: `Add.com. ${params.addizionali.comunale.nome} (cessazione)`, trattenuta: addCom });
       }
     }
 
@@ -590,7 +603,7 @@
     // arrotondamento all'euro con riporto
     let arrPrec = input.arrotondamentoPrecedente || 0;
     let arrAttuale = 0;
-    if (arrPrec) add({ cod: '9960', descr: 'Arrotond. mese pr.', trattenuta: arrPrec > 0 ? arrPrec : undefined, competenza: arrPrec < 0 ? -arrPrec : undefined, C:0,I:0,T:0,N:1 });
+    if (arrPrec) add({ cod: 'ZP9960', descr: 'Arrotond. mese pr.', trattenuta: arrPrec > 0 ? arrPrec : undefined, competenza: arrPrec < 0 ? -arrPrec : undefined, C:0,I:0,T:0,N:1 });
     let nettoConRiporto = r2(netto - arrPrec);
     if (params.arrotondamentoNetto) {
       const nettoArr = Math.round(nettoConRiporto);
@@ -734,12 +747,12 @@
       p367_detrazioniLavoro: cg ? cg.detrAnnua : detrazioneLavoroAnnua(params, impFisc, ggDetr, emp.tempoDeterminato),
       p390_sommaIntegrativa: sum(b => b.sommaIntegrativa),
       p400_trattIntegrativo: sum(b => b.trattamentoIntegrativo),
-      p441_fringeBenefit: sum(b => (b.voci.find(v => v.cod === '0921') || {}).competenza),
+      p441_fringeBenefit: sum(b => (b.voci.find(v => v.cod === 'Z00921') || {}).competenza),
       // dati previdenziali
       imponibileInps: sum(b => b.imponibileInps),
       contributiDip: sum(b => b.contributiDip),
       // sanità integrativa (Quas) e previdenza complementare
-      contributiSanitaDip: sum(b => (b.voci.find(v => v.cod === '5101' || v.cod === '5103') || {}).trattenuta),
+      contributiSanitaDip: sum(b => (b.voci.find(v => v.cod === 'Z31010' || v.cod === 'Z31000') || {}).trattenuta),
       previdenzaComplDip: sum(b => b.fpDip),
       tfrQuoteAnno: sum(b => b.quotaTfrNetta),
       tfrAFondoPensione: sum(b => b.tfrAFondo),

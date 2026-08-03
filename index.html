@@ -39,8 +39,66 @@
   .err { color: var(--rosso); font-size: 13px; }
   textarea.json { width: 100%; min-height: 380px; font-family: monospace; font-size: 12px; }
 
-  /* ============ LUL — grafica stile Zucchetti ============ */
+  /* ============ LUL — riproduzione fedele del modello ============ */
+  :root { --lul-linea: #2f3f8f; --lul-verde: #00863c; --lul-blu: #26307d; }
   .lul-wrap { background: #fff; padding: 10px; overflow-x: auto; }
+  .zlul { width: 760px; margin: 0 auto; padding-top: 6px; background: #fff; color: #000;
+    font-family: "Times New Roman", Times, serif; font-size: 9.5px; line-height: 1.15; position: relative; }
+  .zlul .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .zlul .ctr { text-align: center; }
+  /* riquadro con etichetta appoggiata sul bordo superiore */
+  .zbox { border: 1px solid var(--lul-linea); position: relative; padding: 8px 4px 2px; min-height: 24px; }
+  .zbox > .lb { position: absolute; top: -4.5px; left: 4px; background: #fff; padding: 0 2px;
+    font-family: Arial, Helvetica, sans-serif; font-size: 5.6px; letter-spacing: .1px;
+    color: #000; line-height: 1; white-space: nowrap; }
+  .zrow { display: flex; }
+  .zrow > * { min-width: 0; }
+  .zval { font-size: 10px; }
+  .zval.b { font-weight: bold; }
+  /* barre piene */
+  .zbar { background: var(--lul-verde); color: #fff; font-family: Arial, Helvetica, sans-serif;
+    font-size: 5.8px; padding: 1px 4px; letter-spacing: .2px; }
+  .zbar-blu { background: var(--lul-blu); color: #fff; font-family: Arial, Helvetica, sans-serif;
+    font-size: 5.8px; padding: 1.5px 4px; letter-spacing: .2px; text-align: center; }
+  .zgreen { border: 1.6px solid var(--lul-verde); border-radius: 7px; }
+  /* testata INAIL */
+  .zinail { border: 1px solid var(--lul-linea); padding: 4px 6px; width: 232px; }
+  .zinail .marchio { font-family: Arial Black, Arial, sans-serif; font-weight: 900; font-size: 33px;
+    letter-spacing: 2px; text-align: center; line-height: 1; margin: 2px 0 6px; }
+  .zinail img { max-width: 100%; max-height: 52px; display: block; margin: 0 auto 5px; }
+  .zinail .riga { display: flex; gap: 6px; font-size: 8.6px; }
+  .zinail .riga span:first-child { width: 26px; }
+  /* banda elementi della retribuzione */
+  .zelem { display: flex; border: 1px solid var(--lul-linea); border-top: 0; }
+  .zvert { writing-mode: vertical-rl; transform: rotate(180deg); font-family: Arial, Helvetica, sans-serif;
+    font-size: 5.6px; text-align: center; letter-spacing: .3px; padding: 2px 1px; }
+  .zelem-grid { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); }
+  .zelem-grid > div { border-right: 1px solid var(--lul-linea); border-bottom: 1px solid var(--lul-linea);
+    min-height: 21px; padding: 1px 4px; }
+  .zelem-grid > div:nth-child(6n) { border-right: 0; }
+  .zelem-grid > div.ultima { border-bottom: 0; }
+  .zelem-grid .et { font-size: 8.6px; }
+  /* tabella voci */
+  table.zvoci { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  table.zvoci td { padding: 0.6px 4px; vertical-align: top; }
+  table.zvoci td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.zvoci .flag { width: 8px; text-align: center; font-size: 9px; }
+  .zvoci-box { border: 1px solid var(--lul-linea); border-top: 0; display: flex; }
+  .zvoci-corpo { flex: 1; }
+  .zside { width: 15px; border-right: 1px solid var(--lul-linea); position: relative; }
+  .zside .testo { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%) rotate(180deg);
+    writing-mode: vertical-rl; font-family: Arial, Helvetica, sans-serif; font-size: 5.4px;
+    white-space: nowrap; letter-spacing: .2px; }
+  /* blocchi finali */
+  .zfin { border: 1px solid var(--lul-linea); border-top: 0; }
+  .ztot { border: 1.6px solid var(--lul-verde); border-radius: 7px; padding: 3px; }
+  .ztot .r { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
+  .ztot .r > .et { border: 1px solid var(--lul-linea); font-family: Arial, Helvetica, sans-serif;
+    font-size: 5.6px; padding: 1px 3px; flex: 1; }
+  .ztot .r > .vv { width: 92px; text-align: right; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .znetto { background: var(--lul-verde); color: #fff; font-family: Arial, Helvetica, sans-serif;
+    font-size: 5.8px; padding: 1px 4px; flex: 1; }
+  .zfoot { text-align: center; font-size: 9px; margin-top: 26px; }
   .lul { width: 800px; margin: 0 auto; border: 1.5px solid var(--bordo); font-family: "Arial Narrow", Arial, sans-serif;
          font-size: 10.5px; color: #111; position: relative; background: #fff; }
   .lul .r { display: flex; border-bottom: 1px solid var(--bordo); }
@@ -69,7 +127,7 @@
     body { background: #fff; }
     body.print-lul > *:not(#printArea) { display: none !important; }
     #printArea { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
-    #printArea .lul { width: 100%; border-width: 1px; }
+    #printArea .zlul { width: 100%; font-size: 9px; }
     @page { size: A4 portrait; margin: 10mm; }
   }
   #printArea { display: none; }
@@ -114,7 +172,17 @@
           <option value="oltre50">Oltre 50 dipendenti</option>
         </select></label>
       <label class="f">Sede di lavoro<input id="az_sede" placeholder="Sede operativa"></label>
-      <label class="f">Autorizzazione LUL (n. e data)<input id="az_aut" placeholder="Aut. 41919 del 29-01-2009"></label>
+      <label class="f">Filiale / Dipendenza<input id="az_filiale" placeholder="0000000001"></label>
+      <label class="f">Centro di costo<input id="az_centrocosto"></label>
+      <label class="f">Tipo costo<input id="az_tipocosto"></label>
+      <label class="f">Autorizzazione INAIL — numero<input id="az_autnum" placeholder="41919"></label>
+      <label class="f">Autorizzazione INAIL — data<input id="az_autdata" type="date"></label>
+      <label class="f">Autorizzazione INAIL — sede<input id="az_autsede" placeholder="16300"></label>
+      <label class="f" style="grid-column: span 2">Dicitura in calce al cedolino
+        <input id="az_dicitura" placeholder="Ragione sociale, Autorizzazione Inail n. ___ del __/__/____"></label>
+      <label class="f">Numerazione LUL — prossimo n.<input id="az_progressivo" type="number" min="1" placeholder="1"></label>
+      <label class="f" style="grid-column: span 2">Logo in testata (facoltativo, file immagine)
+        <input id="az_logofile" type="file" accept="image/*" onchange="caricaLogo(event)"></label>
       <label class="f">Note legali / rappresentante<input id="az_note"></label>
     </form>
     <div class="actions">
@@ -362,13 +430,27 @@ function salvaAzienda() {
     indirizzo: val('az_indirizzo').toUpperCase(), citta: val('az_citta').toUpperCase(),
     cf: val('az_cf'), piva: val('az_piva'), posInps: val('az_inps'), patInail: val('az_pat'),
     voceTariffa: val('az_vocetariffa'), inailTasso: num('az_tassoinail'),
-    dimensione: val('az_dimensione'), sede: val('az_sede').toUpperCase(), aut: val('az_aut'), note: val('az_note') };
+    dimensione: val('az_dimensione'), sede: val('az_sede').toUpperCase(),
+    filiale: val('az_filiale'), centroCosto: val('az_centrocosto'), tipoCosto: val('az_tipocosto'),
+    autNum: val('az_autnum'), autData: val('az_autdata'), autSede: val('az_autsede'),
+    dicitura: val('az_dicitura'), progressivo: parseInt(val('az_progressivo')) || 1,
+    logo: logoCaricato !== null ? logoCaricato : (aziende.find(a => a.id === id) || {}).logo || '',
+    note: val('az_note') };
   const i = aziende.findIndex(a => a.id === id);
   if (i >= 0) aziende[i] = az; else aziende.push(az);
   save(LS.az, aziende); resetAzForm(); refreshAll();
 }
+let logoCaricato = null;   // data URI del logo selezionato nel form (null = invariato)
+function caricaLogo(ev) {
+  const f = ev.target.files[0];
+  if (!f) { logoCaricato = null; return; }
+  if (f.size > 300 * 1024) { alert('Immagine troppo grande: usare un file sotto i 300 KB.'); ev.target.value = ''; return; }
+  const r = new FileReader();
+  r.onload = () => { logoCaricato = r.result; };
+  r.readAsDataURL(f);
+}
 function resetAzForm() {
-  document.getElementById('azForm').reset(); set('az_id', '');
+  document.getElementById('azForm').reset(); set('az_id', ''); logoCaricato = null;
   document.getElementById('azFormTitle').textContent = 'Nuova azienda';
 }
 function editAzienda(id) {
@@ -377,7 +459,11 @@ function editAzienda(id) {
   set('az_indirizzo', a.indirizzo); set('az_citta', a.citta); set('az_cf', a.cf); set('az_piva', a.piva);
   set('az_inps', a.posInps); set('az_pat', a.patInail); set('az_vocetariffa', a.voceTariffa || '');
   set('az_tassoinail', a.inailTasso || ''); set('az_dimensione', a.dimensione || 'fino5');
-  set('az_sede', a.sede || ''); set('az_aut', a.aut || ''); set('az_note', a.note || '');
+  set('az_sede', a.sede || ''); set('az_note', a.note || '');
+  set('az_filiale', a.filiale || ''); set('az_centrocosto', a.centroCosto || ''); set('az_tipocosto', a.tipoCosto || '');
+  set('az_autnum', a.autNum || ''); set('az_autdata', a.autData || ''); set('az_autsede', a.autSede || '');
+  set('az_dicitura', a.dicitura || ''); set('az_progressivo', a.progressivo || 1);
+  logoCaricato = null;
   document.getElementById('azFormTitle').textContent = 'Modifica azienda';
   window.scrollTo(0, 0);
 }
@@ -543,6 +629,8 @@ function salvaBusta() {
   const { az, dip, inp, calc } = ultimaAnteprima;
   const key = dip.id + '_' + inp.anno + '_' + inp.mese;
   const i = buste.findIndex(b => b.key === key);
+  // numero LUL: mantiene quello già assegnato in caso di rielaborazione
+  calc.numeroLul = (i >= 0 && buste[i].calc.numeroLul) || prossimoNumeroLul(az);
   const rec = { key, aziendaId: az.id, dipId: dip.id, anno: inp.anno, mese: inp.mese,
     salvataIl: new Date().toISOString(), input: inp, calc };
   if (i >= 0) { if (!confirm('Esiste già una busta per questo mese: sovrascrivere?')) return; buste[i] = rec; }
@@ -564,151 +652,248 @@ function stampaHTML(html) {
   setTimeout(() => { document.body.classList.remove('print-lul'); pa.innerHTML = ''; }, 500);
 }
 
+// Primo numero libero della numerazione LUL dell'azienda: il progressivo
+// impostato in anagrafica, incrementato per ogni busta già numerata.
+function prossimoNumeroLul(az) {
+  const base = (az && az.progressivo) || 1;
+  const usati = buste.filter(b => b.aziendaId === (az || {}).id && b.calc && b.calc.numeroLul)
+    .map(b => b.calc.numeroLul);
+  return usati.length ? Math.max(base, Math.max(...usati) + 1) : base;
+}
 function trovaBusta(dipId, anno, mese) { return buste.find(b => b.dipId === dipId && b.anno === anno && b.mese === mese); }
 function busteDi(dipId, anno) { return buste.filter(b => b.dipId === dipId && (!anno || b.anno === anno)).sort((a, b) => a.mese - b.mese); }
+// ---------------- rendering LUL — riproduzione fedele del modello ----------------
+// Riquadri con etichetta appoggiata sul bordo, barre di intestazione piene,
+// banda "Elementi della retribuzione", tabella voci con doppia colonna di
+// assoggettamento (contributivo / fiscale) e blocchi di riepilogo finali.
 
-// ---------------- rendering LUL (grafica stile Zucchetti) ----------------
+function boxLab(label, contenuto, stile) {
+  return `<div class="zbox" style="${stile || ''}"><span class="lb">${label}</span>${contenuto || ''}</div>`;
+}
+
 function renderLUL(az, dip, inp, c) {
   const el = c.elementi;
-  const settimane = Math.ceil(c.ggMese / 7);
-  const vociRows = c.voci.map(v => {
-    const flags = (v.C ? '*' : '&nbsp;') + ' ' + (v.I ? '*' : '&nbsp;');
-    return `<tr${v.figurativa && !v.competenza && !v.trattenuta ? ' class="fig"' : ''}>
-      <td style="width:26px;white-space:nowrap">${v.cod && v.cod.startsWith('F') ? '' : flags}</td>
-      <td style="width:38px">${esc(v.cod || '')}</td>
-      <td>${esc(v.descr)}</td>
-      <td class="num" style="width:75px">${v.base != null ? fq(v.base) : (v.rif != null ? fmt(v.rif) : '')}</td>
-      <td class="num" style="width:78px">${v.qta != null ? fq(v.qta) + (v.um ? '&nbsp;' + v.um : '') : ''}</td>
-      <td class="num" style="width:72px">${v.trattenuta != null ? fmt(v.trattenuta) : ''}</td>
-      <td class="num" style="width:72px">${v.competenza != null ? fmt(v.competenza) : ''}</td></tr>`;
-  }).join('');
+  const rat = c.ratei, cg = c.conguaglio, pr = c.progressivi;
+  const oggi = new Date();
+  const stampa = `${String(oggi.getDate()).padStart(2,'0')}-${String(oggi.getMonth()+1).padStart(2,'0')}-${oggi.getFullYear()}`;
+  const ora = `${String(oggi.getHours()).padStart(2,'0')}:${String(oggi.getMinutes()).padStart(2,'0')}`;
+  const settimane = Math.ceil((inp.giorniRetribuiti || 26) / 6);
+  const oreStr = (inp.oreStraordinario || 0) + (inp.oreStraordFestivo || 0) + (inp.oreStraordNotturno || 0);
 
-  const rat = c.ratei;
-  const cg = c.conguaglio;
-  return `<div class="lul">
-    <!-- intestazione azienda -->
-    <div class="r">
-      <div class="c" style="width:90px"><span class="lab">Codice Azienda</span><span class="val">${esc(az.codice)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Ragione Sociale</span><span class="val">${esc(az.ragioneSociale)}</span></div>
-      <div class="c" style="width:220px"><span class="lab">Periodo di retribuzione</span>
-        <span class="val" style="font-size:12px">${MESI[c.mese - 1]} ${c.anno}</span></div>
-    </div>
-    <div class="r">
-      <div class="c" style="flex:1"><span class="lab">Indirizzo</span><span class="val">${esc(az.indirizzo)} — ${esc(az.citta)}</span></div>
-      <div class="c" style="width:220px"><span class="lab">Sede</span><span class="val">${esc(az.sede || '')}</span></div>
-    </div>
-    <div class="r">
-      <div class="c" style="width:150px"><span class="lab">Codice Fiscale</span><span class="val">${esc(az.cf)}</span></div>
-      <div class="c" style="width:150px"><span class="lab">Posizione Inps</span><span class="val">${esc(az.posInps)}</span></div>
-      <div class="c" style="width:150px"><span class="lab">P.A.T. Inail</span><span class="val">${esc(az.patInail)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Voce tariffa Inail</span><span class="val">${esc(az.voceTariffa || '')}</span></div>
-      <div class="c" style="width:150px"><span class="lab">CCNL</span><span class="val">Commercio CNEL ${esc(params.ccnl.codiceCNEL)}</span></div>
-    </div>
-    <!-- dipendente -->
-    <div class="r">
-      <div class="c" style="width:90px"><span class="lab">Codice dipendente</span><span class="val">${esc(dip.matricola || '')}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Cognome e nome</span><span class="val">${esc(dip.cognome)} ${esc(dip.nome)}</span></div>
-      <div class="c" style="width:150px"><span class="lab">Codice fiscale</span><span class="val">${esc(dip.cf || '')}</span></div>
-      <div class="c" style="width:120px"><span class="lab">Qualifica</span><span class="val">${dip.livello === 'QUADRO' ? 'QUADRO' : dip.livello + ' Livello'} ${dip.tempoDeterminato ? 'T.Det.' : 'T.Indet.'}</span></div>
-    </div>
-    <div class="r">
-      <div class="c" style="width:120px"><span class="lab">Data di nascita</span><span class="val">${fmtData(dip.dataNascita)}</span></div>
-      <div class="c" style="width:120px"><span class="lab">Data assunzione</span><span class="val">${fmtData(dip.dataAssunzione)}</span></div>
-      <div class="c" style="width:120px"><span class="lab">Data cessazione</span><span class="val">${fmtData(dip.dataCessazione)}</span></div>
-      <div class="c" style="width:110px"><span class="lab">Scatti anz.</span><span class="val">${el.numScatti}</span></div>
-      <div class="c" style="width:90px"><span class="lab">% Part-time</span><span class="val">${el.percPartTime}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Pagamento</span><span class="val">${esc(dip.modalitaPagamento || '')} ${esc(dip.iban || '')}</span></div>
-    </div>
-    <!-- riga INPS / minimale / lavorato -->
-    <div class="r">
-      <div class="c" style="width:80px"><span class="lab">Settimane INPS</span><span class="val num">${settimane}</span></div>
-      <div class="c" style="width:80px"><span class="lab">GG retribuiti</span><span class="val num">${fq(inp.giorniRetribuiti)}</span></div>
-      <div class="c" style="width:80px"><span class="lab">GG lavorati</span><span class="val num">${fq(inp.giorniLavorati)}</span></div>
-      <div class="c" style="width:80px"><span class="lab">Ore lavorate</span><span class="val num">${fq(inp.oreLavorate)}</span></div>
-      <div class="c" style="width:90px"><span class="lab">GG detrazione</span><span class="val num">${c.giorniDetrazione}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Ore straordinarie</span><span class="val num">${fq((inp.oreStraordinario||0)+(inp.oreStraordFestivo||0)+(inp.oreStraordNotturno||0))}</span></div>
-    </div>
-    <!-- elementi della retribuzione -->
-    <div class="r" style="background:#fafafa">
-      <div class="c" style="width:20px;position:relative"><span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(180deg);writing-mode:vertical-rl;font-size:6.5px;letter-spacing:.5px">ELEMENTI RETRIB.</span></div>
-      <div class="c" style="flex:1"><span class="lab">Paga base</span><span class="val num">${fmt(el.pagaBase, 5)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Contingenza</span><span class="val num">${fmt(el.contingenza, 5)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Terzo elemento</span><span class="val num">${fmt(el.terzoElemento, 5)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Ind. funzione</span><span class="val num">${el.indennitaFunzione ? fmt(el.indennitaFunzione, 5) : ''}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Scatti anz.</span><span class="val num">${el.scatti ? fmt(el.scatti, 5) : ''}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Superm. assorb.</span><span class="val num">${el.superminimo ? fmt(el.superminimo, 5) : ''}</span></div>
-      <div class="c" style="flex:1;background:#f0f0f0"><span class="lab">Totale</span><span class="val num">${fmt(el.totale, 5)}</span></div>
-    </div>
-    <div class="r" style="background:#fafafa">
-      <div class="c" style="width:20px"></div>
-      <div class="c" style="flex:1"><span class="lab">Retribuzione oraria</span><span class="val num">${fq(el.oraria)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Retribuzione giornaliera</span><span class="val num">${fq(el.giornaliera)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Retribuzione mensile</span><span class="val num">${fmt(el.totale)}</span></div>
-      <div class="c" style="flex:2"><span class="lab">Reddito annuo di riferimento</span><span class="val num">${fmt(c.redditoAnnuoRiferimento)}</span></div>
-    </div>
-    <!-- corpo voci -->
-    <div class="lul-body">
-      <div class="lul-side"><span>VOCI VARIABILI DEL MESE</span></div>
-      <div class="lul-voci">
-        <table class="voci">
-          <tr><th style="width:26px">C I</th><th style="width:38px">Voce</th><th style="text-align:left">Descrizione</th>
-            <th class="num" style="width:75px">Importo base</th><th class="num" style="width:78px">Riferimento</th>
-            <th class="num" style="width:72px">Trattenute</th><th class="num" style="width:72px">Competenze</th></tr>
-          ${vociRows}
-        </table>
+  // ---- righe voci: due colonne di asterischi = assoggettamento contributivo e fiscale ----
+  const righe = c.voci.map(v => {
+    const soloRif = v.cod && v.cod.startsWith('F');
+    const base = v.base != null ? (v.dec5 ? fq(v.base) : fmt(v.base)) : '';
+    const rif = v.qta != null && v.qta !== 0
+      ? fq(v.qta) + (v.um ? '&nbsp;' + v.um : '') : '';
+    return `<tr>
+      <td class="flag">${!soloRif && v.C ? '*' : ''}</td>
+      <td class="flag">${!soloRif && v.I ? '*' : ''}</td>
+      <td style="width:44px">${esc(v.cod || '')}</td>
+      <td>${esc(v.descr)}</td>
+      <td class="num" style="width:92px">${base}</td>
+      <td class="num" style="width:104px">${rif}</td>
+      <td class="num" style="width:86px">${v.trattenuta != null ? fmt(v.trattenuta) : ''}</td>
+      <td class="num" style="width:86px">${v.competenza != null ? fmt(v.competenza) : ''}</td></tr>`;
+  }).join('');
+  // righe vuote per mantenere l'altezza del corpo come nel modello a stampa
+  const vuote = Math.max(0, 22 - c.voci.length);
+  const riempimento = '<tr><td colspan="8">&nbsp;</td></tr>'.repeat(vuote);
+
+  // ---- celle della banda "Elementi della retribuzione" ----
+  const elementi = [
+    ['Retr.Naz.', el.pagaBase], ['Contingenza', el.contingenza],
+    ['Terzo elem.', el.terzoElemento], ['Ind.Funzione', el.indennitaFunzione],
+    ['Scatti anz.', el.scatti], ['SUP.ASS.', el.superminimo]
+  ];
+  const celleElem = elementi.map(([n, v]) =>
+    `<div>${v ? `<div class="et">${n}</div><div class="num zval">${fmt(v, 5)}</div>` : ''}</div>`).join('');
+
+  // Numero progressivo del LUL: assegnato alla prima elaborazione e conservato
+  // con la busta, così una ristampa riporta sempre lo stesso numero.
+  const numeroLul = c.numeroLul || prossimoNumeroLul(az);
+  const dicitura = az.dicitura
+    || `${esc(az.ragioneSociale || '')}${az.autNum ? ', Autorizzazione Inail n. ' + esc(az.autNum) : ''}${az.autData ? ' del ' + fmtData(az.autData) : ''}`;
+
+  return `<div class="zlul">
+
+  <!-- ============ TESTATA ============ -->
+  <div class="zrow" style="gap:6px; align-items:flex-start">
+    <div style="flex:1">
+      <div class="zrow">
+        ${boxLab('Codice Azienda', `<div class="zval">${esc(az.codice || '')}</div>`, 'width:118px;border-right:0')}
+        ${boxLab('Ragione Sociale', `<div class="zval b">${esc(az.ragioneSociale || '')}</div>`, 'flex:1')}
+      </div>
+      ${boxLab('Indirizzo', `<div class="zval">${esc(az.indirizzo || '')}</div>
+        <div class="zval">${esc(az.citta || '')}</div>`, 'border-top:0')}
+      <div class="zrow">
+        ${boxLab('Codice Fiscale', `<div class="zval">${esc(az.cf || '')}</div>`, 'width:118px;border-top:0;border-right:0')}
+        ${boxLab('Posizione Inps', `<div class="zval">${esc(az.posInps || '')}</div>`, 'width:120px;border-top:0;border-right:0')}
+        ${boxLab('P.A.T. Inail', `<div class="zval">${esc(az.patInail || '')}</div>`, 'width:118px;border-top:0;border-right:0')}
+        ${boxLab('Filiale/Dipendenza', `<div class="zval">${esc(az.filiale || '')}</div>
+          <div class="zval">${esc(az.sede || '')}</div>`, 'flex:1;border-top:0')}
+      </div>
+      <div style="padding:3px 4px 0;font-size:9.5px">
+        <div>Centro di costo : ${esc(az.centroCosto || '')}</div>
+        <div>TipoCosto : ${esc(az.tipoCosto || '')}</div>
       </div>
     </div>
-    <!-- conguaglio -->
-    ${cg ? `<div class="r">
-      <div class="c" style="width:80px"><span class="lab">Conguaglio</span><span class="val">${MESI[c.mese-1].substring(0,3).toUpperCase()}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Imponibile annuo</span><span class="val num">${fmt(cg.impFiscAnnuo)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">IRPEF lorda</span><span class="val num">${fmt(cg.lordaAnnua)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Detrazioni</span><span class="val num">${fmt(cg.detrAnnua)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">IRPEF trattenuta</span><span class="val num">${fmt(cg.irpefTrattenutaAnno)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Add. regionale</span><span class="val num">${fmt(cg.addRegionaleDovuta)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Add. comunale</span><span class="val num">${fmt(cg.addComunaleDovuta)}</span></div>
-    </div>` : ''}
-    <!-- progressivi -->
-    <div class="r">
-      <div class="c" style="width:80px"><span class="lab">Progressivi</span></div>
-      <div class="c" style="flex:1"><span class="lab">Imp. INPS</span><span class="val num">${fmt(c.progressivi.impInps)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Imp. INAIL</span><span class="val num">${fmt(c.progressivi.impInps)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Imp. IRPEF</span><span class="val num">${fmt(c.progressivi.impIrpef)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">IRPEF pagata</span><span class="val num">${fmt(c.progressivi.irpefPagata)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Contributi anno</span><span class="val num">${fmt(c.progressivi.contributi)}</span></div>
-    </div>
-    <!-- TFR -->
-    <div class="r">
-      <div class="c" style="width:80px"><span class="lab">T.F.R.</span></div>
-      <div class="c" style="flex:1"><span class="lab">Retrib. utile TFR</span><span class="val num">${fmt(c.retribUtileTfr)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Quota mese</span><span class="val num">${fmt(c.quotaTfrNetta)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">TFR anno</span><span class="val num">${fmt(c.progressivi.tfrAnno)}</span></div>
-      <div class="c" style="flex:1"><span class="lab">a F.do pensione</span><span class="val num">${c.tfrAFondo ? fmt(c.tfrAFondo) : ''}</span></div>
-      <div class="c" style="flex:1"><span class="lab">Quota FAP 0,50%</span><span class="val num">${fmt(c.fap)}</span></div>
-    </div>
-    <!-- ratei e totali -->
-    <div class="r lul-foot">
-      <div class="c" style="flex:1.4;padding:0">
-        <table class="voci" style="font-size:9.5px">
-          <tr><th style="text-align:left">Ratei</th><th class="num">Residuo AP</th><th class="num">Maturato</th><th class="num">Goduto</th><th class="num">Saldo</th><th></th></tr>
-          <tr><td>Ferie</td><td class="num">${fq(rat.ferie.residuoAP)}</td><td class="num">${fq(rat.ferie.maturato)}</td><td class="num">${fq(rat.ferie.goduto)}</td><td class="num">${fq(rat.ferie.saldo)}</td><td>GG.</td></tr>
-          <tr><td>Perm. Ex-Fs</td><td class="num">${fq(rat.exFest.residuoAP)}</td><td class="num">${fq(rat.exFest.maturato)}</td><td class="num">${fq(rat.exFest.goduto)}</td><td class="num">${fq(rat.exFest.saldo)}</td><td>ORE</td></tr>
-          <tr><td>Permessi ROL</td><td class="num">${fq(rat.rol.residuoAP)}</td><td class="num">${fq(rat.rol.maturato)}</td><td class="num">${fq(rat.rol.goduto)}</td><td class="num">${fq(rat.rol.saldo)}</td><td>ORE</td></tr>
-        </table>
+    <div>
+      <div class="zinail">
+        ${az.logo ? `<img src="${esc(az.logo)}" alt="">` : '<div class="marchio">INAIL</div>'}
+        <div class="riga"><span>Aut.</span><span>${esc(az.autNum || '')}</span></div>
+        <div class="riga"><span>Del</span><span>${fmtData(az.autData)}</span><span>Sede</span><span>${esc(az.autSede || '')}</span></div>
+        <div class="riga"><span>Nr.</span><span>${numeroLul}</span></div>
+        <div class="riga"><span></span><span>${stampa}&nbsp;&nbsp;${ora}</span></div>
       </div>
-      <div class="c" style="flex:1;padding:0">
-        <div style="display:flex;border-bottom:1px solid var(--bordo)"><div style="flex:1;padding:2px 5px" class="lab">TOTALE COMPETENZE</div><div class="num val" style="width:90px;padding:2px 5px">${fmt(c.totCompetenze)}</div></div>
-        <div style="display:flex;border-bottom:1px solid var(--bordo)"><div style="flex:1;padding:2px 5px" class="lab">TOTALE TRATTENUTE</div><div class="num val" style="width:90px;padding:2px 5px">${fmt(c.totTrattenute)}</div></div>
-        <div style="display:flex;border-bottom:1px solid var(--bordo)"><div style="flex:1;padding:2px 5px" class="lab">ARROTONDAMENTO</div><div class="num val" style="width:90px;padding:2px 5px">${fmt(c.arrotondamentoAttuale)}</div></div>
-        <div style="display:flex"><div style="flex:1;padding:2px 5px" class="lab">NETTO DEL MESE</div><div class="lul-netto" style="width:110px">${fmt(c.netto)}&nbsp;€</div></div>
+      <div class="zgreen" style="margin-top:4px">
+        <div class="zbar" style="border-radius:5px 5px 0 0">PERIODO DI RETRIBUZIONE</div>
+        <div class="zval b" style="padding:3px 5px 4px">${MESI[c.mese - 1]} ${c.anno}</div>
       </div>
     </div>
-    <div class="r">
-      <div class="c" style="flex:1"><span class="lab">Comunicazioni</span>
-        <span class="val" style="font-weight:400;font-size:9px">Costo azienda stimato: contributi INPS c/ditta ${fmt(c.costoAzienda.contributiInps)} — INAIL ${fmt(c.costoAzienda.inail)} — quota TFR ${fmt(c.costoAzienda.quotaTfr)}${c.costoAzienda.quasAzienda ? ' — Qu.A.S. ' + fmt(c.costoAzienda.quasAzienda) : ''}${c.costoAzienda.quadriforAzienda ? ' — Quadrifor ' + fmt(c.costoAzienda.quadriforAzienda) : ''}${c.costoAzienda.fondoPensioneAzienda ? ' — F.do pens. ' + fmt(c.costoAzienda.fondoPensioneAzienda) : ''} — Totale ${fmt(c.costoAzienda.totale)} €</span></div>
+  </div>
+
+  <!-- ============ DIPENDENTE ============ -->
+  <div class="zgreen zrow" style="margin-top:5px;align-items:stretch">
+    ${boxLab('Codice dipendente', `<div class="zval">${esc(dip.matricola || '')}</div>`,
+      'width:118px;border:0;border-right:1px solid var(--lul-linea)')}
+    <div style="flex:1">
+      <div class="zbar">COGNOME E NOME</div>
+      <div class="zval b" style="padding:2px 5px 3px;font-size:11px">${esc(dip.cognome || '')} ${esc(dip.nome || '')}</div>
     </div>
-    <div class="lul-cred">BustaPaga — elaborazione ${new Date().toLocaleDateString('it-IT')} — ${esc(params.ccnl.nome)}</div>
-  </div>`;
+    ${boxLab('Codice Fiscale', `<div class="zval">${esc(dip.cf || '')}</div>`,
+      'width:150px;border:0;border-left:1px solid var(--lul-linea)')}
+    ${boxLab('Matricola', `<div class="zval">${esc(dip.matricola || '')}</div>`,
+      'width:76px;border:0;border-left:1px solid var(--lul-linea)')}
+  </div>
+
+  <!-- ============ DATI CONTRATTUALI ============ -->
+  <div class="zrow" style="margin-top:4px">
+    ${boxLab('Data di Nascita', `<div class="zval">${fmtData(dip.dataNascita)}</div>`, 'width:100px;border-right:0')}
+    ${boxLab('Data Assunzione', `<div class="zval">${fmtData(dip.dataAssunzione)}</div>`, 'width:100px;border-right:0')}
+    ${boxLab('Data Cessazione', `<div class="zval">${fmtData(dip.dataCessazione)}</div>`, 'width:100px;border-right:0')}
+    <div class="zbox" style="flex:1">
+      <div class="zrow" style="gap:26px">
+        <span class="zval">${dip.livello === 'QUADRO' ? 'QUADRO' : 'IMP'}</span>
+        <span class="zval">${dip.livello === 'QUADRO' ? '' : esc(dip.livello) + ' Livello'}</span>
+        <span class="zval">${dip.tempoDeterminato ? 'T.Determinato' : 'T.Indeterminato'}</span>
+        <span class="zval">${(dip.percPartTime && dip.percPartTime < 100) ? 'Part-time ' + dip.percPartTime + '%' : ''}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RIGA PRESENZE ============ -->
+  <div class="zrow" style="border:1px solid var(--lul-linea);border-top:0">
+    <div style="width:150px;border-right:1px solid var(--lul-linea);padding:1px 3px">
+      <div class="ctr" style="font-family:Arial;font-size:5.6px">INPS</div>
+      <div class="zrow" style="font-family:Arial;font-size:5.2px;text-align:center">
+        <span style="flex:1">Settimane</span><span style="flex:1">Giorni</span><span style="flex:1">Ore</span></div>
+      <div class="zrow ctr zval"><span style="flex:1">${settimane}</span><span style="flex:1">${fq(inp.giorniRetribuiti)}</span><span style="flex:1"></span></div>
+    </div>
+    <div style="width:110px;border-right:1px solid var(--lul-linea);padding:1px 3px">
+      <div class="ctr" style="font-family:Arial;font-size:5.6px">MINIMALE</div>
+      <div class="zrow" style="font-family:Arial;font-size:5.2px;text-align:center">
+        <span style="flex:1">Giorni</span><span style="flex:1">Ore</span></div>
+      <div class="zrow ctr zval"><span style="flex:1">${fq(inp.giorniLavorati)}</span><span style="flex:1"></span></div>
+    </div>
+    <div style="width:190px;border-right:1px solid var(--lul-linea);padding:1px 3px">
+      <div class="ctr" style="font-family:Arial;font-size:5.6px">LAVORATO</div>
+      <div class="zrow" style="font-family:Arial;font-size:5.2px;text-align:center">
+        <span style="flex:1">Giorni</span><span style="flex:1">Ore ordinarie</span><span style="flex:1">Ore straordinarie</span></div>
+      <div class="zrow ctr zval"><span style="flex:1">${fq(inp.giorniLavorati)}</span><span style="flex:1">${fq(inp.oreLavorate)}</span><span style="flex:1">${oreStr ? fq(oreStr) : ''}</span></div>
+    </div>
+    <div style="width:74px;border-right:1px solid var(--lul-linea);padding:1px 3px">
+      <div class="ctr" style="font-family:Arial;font-size:5.2px">Giorni<br>Detrazioni</div>
+      <div class="ctr zval">${c.giorniDetrazione}</div>
+    </div>
+    <div style="flex:1;padding:6px 6px 0" class="zval">CNEL ${esc(params.ccnl.codiceCNEL)}</div>
+  </div>
+
+  <!-- ============ ELEMENTI DELLA RETRIBUZIONE ============ -->
+  <div class="zelem">
+    <div style="width:15px;border-right:1px solid var(--lul-linea);display:flex;align-items:center;justify-content:center">
+      <div class="zvert">ELEMENTI DELLA RETRIBUZIONE</div>
+    </div>
+    <div style="flex:1">
+      <div class="zelem-grid">${celleElem}</div>
+      <div class="zrow" style="border-top:1px solid var(--lul-linea)">
+        <div style="flex:1;padding:2px 4px;font-family:Arial;font-size:5.6px">PROSSIMO SCATTO</div>
+        <div style="width:150px;padding:1px 5px;text-align:right">
+          <div style="font-family:Arial;font-size:5.6px">TOTALE</div>
+          <div class="zval b">${fmt(el.totale, 5)}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VOCI VARIABILI DEL MESE ============ -->
+  <div class="zvoci-box">
+    <div class="zside"><div class="testo">${esc(az.note || '')}</div></div>
+    <div class="zvoci-corpo">
+      <div class="zrow" style="align-items:flex-end">
+        <div style="width:16px;font-family:Arial;font-size:5px;text-align:center">SOGG</div>
+        <div style="flex:1" class="zbar-blu">VOCI VARIABILI DEL MESE</div>
+        <div style="width:92px" class="zbar-blu">IMPORTO BASE</div>
+        <div style="width:104px" class="zbar-blu">RIFERIMENTO</div>
+        <div style="width:86px" class="zbar-blu">TRATTENUTE</div>
+        <div style="width:86px" class="zbar-blu">COMPETENZE</div>
+      </div>
+      <table class="zvoci">${righe}${riempimento}</table>
+    </div>
+  </div>
+
+  <!-- ============ RIEPILOGHI ============ -->
+  ${boxLab('CONGUAGLIO', cg ? `<div class="zrow" style="font-size:9px;gap:10px">
+      <span style="flex:1">Imponibile <b>${fmt(cg.impFiscAnnuo)}</b></span>
+      <span style="flex:1">IRPEF lorda <b>${fmt(cg.lordaAnnua)}</b></span>
+      <span style="flex:1">Detrazioni <b>${fmt(cg.detrAnnua)}</b></span>
+      <span style="flex:1">IRPEF trattenuta <b>${fmt(cg.irpefTrattenutaAnno)}</b></span>
+      <span style="flex:1">Add.regionale <b>${fmt(cg.addRegionaleDovuta)}</b></span>
+      <span style="flex:1">Add.comunale <b>${fmt(cg.addComunaleDovuta)}</b></span>
+    </div>` : '', 'border-top:0')}
+
+  ${boxLab('PROGRESSIVI', `<div class="zrow" style="font-size:9px;gap:10px">
+      <span style="flex:1">Imp. INPS <b>${fmt(pr.impInps)}</b></span>
+      <span style="flex:1">Imp. INAIL <b>${fmt(pr.impInps)}</b></span>
+      <span style="flex:1">Imp. IRPEF <b>${fmt(pr.impIrpef)}</b></span>
+      <span style="flex:1">IRPEF pagata <b>${fmt(pr.irpefPagata)}</b></span>
+      <span style="flex:1">Contributi <b>${fmt(pr.contributi)}</b></span>
+    </div>`, 'border-top:0')}
+
+  ${boxLab('T.F.R.', `<div class="zrow" style="font-size:9px;gap:10px">
+      <span style="flex:1">Retrib. utile <b>${fmt(c.retribUtileTfr)}</b></span>
+      <span style="flex:1">Quota mese <b>${fmt(c.quotaTfrNetta)}</b></span>
+      <span style="flex:1">TFR anno <b>${fmt(pr.tfrAnno)}</b></span>
+      <span style="flex:1">a F.do pensione <b>${c.tfrAFondo ? fmt(c.tfrAFondo) : '—'}</b></span>
+      <span style="flex:1">Quota FAP <b>${fmt(c.fap)}</b></span>
+    </div>`, 'border-top:0')}
+
+  <div class="zrow" style="align-items:stretch">
+    ${boxLab('RATEI', `<table style="width:100%;font-size:8.6px;border-collapse:collapse">
+        <tr style="font-family:Arial;font-size:5.6px"><td></td><td class="num">Residuo AP</td><td class="num">Maturato</td>
+          <td class="num">Goduto</td><td class="num">Saldo</td><td></td></tr>
+        <tr><td>Ferie</td><td class="num">${fq(rat.ferie.residuoAP)}</td><td class="num">${fq(rat.ferie.maturato)}</td>
+          <td class="num">${fq(rat.ferie.goduto)}</td><td class="num">${fq(rat.ferie.saldo)}</td><td style="width:26px">&nbsp;GG.</td></tr>
+        <tr><td>Perm.Ex-Fs</td><td class="num">${fq(rat.exFest.residuoAP)}</td><td class="num">${fq(rat.exFest.maturato)}</td>
+          <td class="num">${fq(rat.exFest.goduto)}</td><td class="num">${fq(rat.exFest.saldo)}</td><td>&nbsp;ORE</td></tr>
+        <tr><td>Permessi</td><td class="num">${fq(rat.rol.residuoAP)}</td><td class="num">${fq(rat.rol.maturato)}</td>
+          <td class="num">${fq(rat.rol.goduto)}</td><td class="num">${fq(rat.rol.saldo)}</td><td>&nbsp;ORE</td></tr>
+      </table>`, 'flex:1;border-top:0;border-right:0')}
+    <div style="width:250px;border:1px solid var(--lul-linea);border-top:0;padding:4px">
+      <div class="ztot">
+        <div class="r"><span class="et">TOTALE COMPETENZE</span><span class="vv">${fmt(c.totCompetenze)}</span></div>
+        <div class="r"><span class="et">TOTALE TRATTENUTE</span><span class="vv">${fmt(c.totTrattenute)}</span></div>
+        <div class="r"><span class="et">ARROTONDAMENTO</span><span class="vv">${fmt(c.arrotondamentoAttuale)}</span></div>
+        <div class="r" style="margin-bottom:0"><span class="znetto">NETTO DEL MESE</span>
+          <span class="vv" style="font-size:14px;font-weight:bold">${fmt(c.netto)}&nbsp;€</span></div>
+      </div>
+    </div>
+  </div>
+
+  ${boxLab('COMUNICAZIONI', `<div style="font-size:8.4px;min-height:26px">${esc(inp.comunicazioni || '')}</div>`, 'border-top:0')}
+
+  <div class="zfoot">${dicitura}</div>
+</div>`;
 }
 
 // ---------------- archivio ----------------

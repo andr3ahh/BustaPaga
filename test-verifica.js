@@ -35,7 +35,7 @@ console.log('== TEST 2: busta LUGLIO 2026 — Quadro al minimo contrattuale, con
   const minimo = 2183.09 + 540.37 + 2.07 + 260.76;               // 2986.29
   eq('retribuzione mensile', c.elementi.totale, 2986.29, 0.001);
   const q14 = Math.round(minimo * 6 / 12 * 100) / 100;           // 14ª: 6 mesi (gen-giu 2026) = 1493.15
-  eq('quattordicesima (6/12)', (c.voci.find(v => v.cod === '0501') || {}).competenza, q14, 0.01);
+  eq('quattordicesima (6/12)', (c.voci.find(v => v.cod === 'Z50002') || {}).competenza, q14, 0.01);
   const lordo = minimo + q14;                                     // 4479.44
   eq('totale competenze', c.totCompetenze, 4479.44, 0.01);
   const impInps = Math.round(lordo);                               // 4479
@@ -43,8 +43,8 @@ console.log('== TEST 2: busta LUGLIO 2026 — Quadro al minimo contrattuale, con
   const aliq = 9.19 + 0.1667;                                      // fino a 5 dip → FIS 0,1667
   const contrib = Math.round(impInps * aliq) / 100;                // 419.09
   eq('contributi c/dip 9,3567%', c.contributiIvs, 419.09, 0.01);
-  eq('Qu.A.S. c/dip (56/12)', (c.voci.find(v => v.cod === '5101') || {}).trattenuta, 4.67, 0.01);
-  eq('Quadrifor c/dip (25/12)', (c.voci.find(v => v.cod === '5102') || {}).trattenuta, 2.08, 0.01);
+  eq('Qu.A.S. c/dip (56/12)', (c.voci.find(v => v.cod === 'Z31010') || {}).trattenuta, 4.67, 0.01);
+  eq('Quadrifor c/dip (25/12)', (c.voci.find(v => v.cod === 'Z31020') || {}).trattenuta, 2.08, 0.01);
   const impFisc = Math.round((lordo - 419.09 - 4.67 - 2.08) * 100) / 100;  // 4053.60
   eq('imponibile fiscale', c.imponibileFiscale, 4053.60, 0.01);
   // IRPEF 2026: 23% fino 28k, 33% 28-50k su base annualizzata
@@ -77,7 +77,7 @@ console.log('== TEST 3: buoni pasto elettronici 2026 — esenzione 10 €, ecced
   const inp = { anno: 2026, mese: 3, giorniRetribuiti: 26, giorniLavorati: 20, oreLavorate: 160,
     giorniDetrazione: 31, buoniPastoGiorni: 20, buoniPastoValore: 12, buoniPastoTipo: 'elettronico' };
   const c = E.calcolaBusta(P, azienda, emp, inp, []);
-  const bpEsente = c.voci.find(v => v.cod === '0140'), bpEcc = c.voci.find(v => v.cod === '0141');
+  const bpEsente = c.voci.find(v => v.cod === 'Z00140'), bpEcc = c.voci.find(v => v.cod === 'Z00141');
   eq('BP quota esente 20×10', bpEsente.competenza, 200, 0.01);
   eq('BP eccedenza 20×2', bpEcc.competenza, 40, 0.01);
   eq('eccedenza nell\'imponibile INPS', c.imponibileInps, Math.round(2986.29 + 40), 0);
@@ -94,7 +94,7 @@ console.log('== TEST 4: dicembre — 13ª e conguaglio IRPEF su storico annuo ==
   }
   const dic = E.calcolaBusta(P, azienda, emp,
     { anno: 2026, mese: 12, giorniRetribuiti: 26, giorniLavorati: 22, oreLavorate: 176, giorniDetrazione: 31 }, storico);
-  const v13 = dic.voci.find(v => v.cod === '0500');
+  const v13 = dic.voci.find(v => v.cod === 'Z50000');
   // 13ª calcolata sulla retribuzione di dicembre, che include la tranche CCNL 1/11/2026
   // (paga base 2.249,37): 2.249,37+540,37+2,07+260,76 = 3.052,57
   eq('13ª piena (12/12) su retribuzione dicembre', v13.competenza, 3052.57, 0.01);
