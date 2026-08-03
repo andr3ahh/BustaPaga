@@ -106,9 +106,16 @@ console.log('== TEST 4: dicembre — 13ª e conguaglio IRPEF su storico annuo ==
   eq('IRPEF trattenuta anno = netta annua', cg.irpefTrattenutaAnno, cg.nettaAnnua, 0.02);
   // imponibile annuo = 12 mensilità + 13ª + 14ª al netto contributi/fondi
   console.log(`     imponibile annuo ${cg.impFiscAnnuo}, IRPEF netta annua ${cg.nettaAnnua}, add.reg ${cg.addRegionaleDovuta}, add.com ${cg.addComunaleDovuta}`);
-  // addizionale regionale FVG: 1,23% sull'intero imponibile (oltre 15.000)
-  eq('add. regionale FVG 1,23%', cg.addRegionaleDovuta, Math.round(cg.impFiscAnnuo * 1.23) / 100, 0.02);
-  eq('add. comunale 0,50%', cg.addComunaleDovuta, Math.round(cg.impFiscAnnuo * 0.50) / 100, 0.02);
+  // addizionale regionale Lombardia: progressiva per scaglioni 1,23 / 1,58 / 1,72 / 1,73
+  const imp = cg.impFiscAnnuo;
+  const attesaReg = Math.min(imp, 15000) * 0.0123
+    + Math.max(0, Math.min(imp, 28000) - 15000) * 0.0158
+    + Math.max(0, Math.min(imp, 50000) - 28000) * 0.0172
+    + Math.max(0, imp - 50000) * 0.0173;
+  eq('add. regionale Lombardia (per scaglioni)', cg.addRegionaleDovuta, Math.round(attesaReg * 100) / 100, 0.02);
+  // addizionale comunale Milano: 0,80% sull'intero imponibile oltre la soglia di 23.000
+  const attesaCom = imp > 23000 ? imp * 0.008 : 0;
+  eq('add. comunale Milano 0,80%', cg.addComunaleDovuta, Math.round(attesaCom * 100) / 100, 0.02);
   // ratei a dicembre: ferie 26 gg, ROL 72 h, ex-fest 32 h maturati interi
   eq('ferie maturate anno', dic.ratei.ferie.maturato, 26, 0.01);
   eq('ROL maturato anno', dic.ratei.rol.maturato, 72, 0.01);
@@ -153,6 +160,37 @@ console.log('== TEST 6: prospetto CU — quadratura con le buste dell\'anno ==')
   eq('CU quote TFR = somma quote mensili', cu.tfrQuoteAnno,
     Math.round(bs.reduce((s, b) => s + b.quotaTfrNetta, 0) * 100) / 100, 0.02);
   console.log(`     CU: reddito ${cu.p1_redditoLavoroDipTI}, ritenute ${cu.p21_ritenuteIrpef}, gg detrazione ${cu.p6_giorniDetrazione}`);
+}
+
+console.log('== TEST 7: addizionali Lombardia/Milano — riscontro su LUL reale ==');
+{
+  // LUL reale: imponibile a conguaglio 10.866,65 -> add. regionale LOMBARDIA 133,66,
+  // addizionale comunale (Milano, cod. F205) assente perche' sotto la soglia di esenzione.
+  const impLul = 10866.65;
+  eq('add. regionale su 10.866,65 (LUL: 133,66)', E.addizionaleRegionale(P, impLul), 133.66, 0.01);
+  eq('add. comunale sotto soglia 23.000 (LUL: nessuna)', E.addizionaleComunale(P, impLul), 0, 0.001);
+  // controllo del cambio di scaglione
+  eq('add. regionale su 15.000 esatti', E.addizionaleRegionale(P, 15000), 184.50, 0.01);
+  eq('add. regionale su 60.000', E.addizionaleRegionale(P, 60000),
+     Math.round((15000 * 1.23 + 13000 * 1.58 + 22000 * 1.72 + 10000 * 1.73)) / 100, 0.02);
+  eq('add. comunale su 23.000 esatti (esente)', E.addizionaleComunale(P, 23000), 0, 0.001);
+  eq('add. comunale su 23.001 (intero imponibile)', E.addizionaleComunale(P, 23001), r2Test(23001 * 0.008), 0.01);
+}
+function r2Test(x) { return Math.round(x * 100) / 100; }
+
+console.log('== TEST 8: scaglioni superiori dopo salvataggio/ricarica dei parametri ==');
+{
+  // Nel sistema i parametri passano da JSON (salvataggio nel browser): Infinity
+  // diventa null. L'ultimo scaglione, privo di tetto, deve restare tassato.
+  const salvati = JSON.parse(JSON.stringify(E.DEFAULT_PARAMS));
+  eq('IRPEF 2026 su 60.000 (scaglione 43% applicato)',
+     E.irpefLordaAnnua(salvati, 2026, 60000),
+     r2Test(28000 * 0.23 + 22000 * 0.33 + 10000 * 0.43), 0.01);
+  eq('IRPEF invariata rispetto ai parametri non serializzati',
+     E.irpefLordaAnnua(salvati, 2026, 60000), E.irpefLordaAnnua(E.DEFAULT_PARAMS, 2026, 60000), 0.001);
+  eq('add. regionale su 60.000 dopo salvataggio',
+     E.addizionaleRegionale(salvati, 60000),
+     r2Test(15000 * 0.0123 + 13000 * 0.0158 + 22000 * 0.0172 + 10000 * 0.0173), 0.02);
 }
 
 console.log(`\n===== RISULTATO: ${ok} verifiche superate, ${ko} fallite =====`);

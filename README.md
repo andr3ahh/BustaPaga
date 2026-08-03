@@ -70,9 +70,12 @@ pubblico); il **sito** invece è accessibile solo con la password. I dati inseri
   (con maggiorazione €65 per RC 25-35k); **somma integrativa L.207/2024** (RC ≤ 20.000: 7,1/5,3/4,8%);
   **ulteriore detrazione** €1.000 (RC 20-32k, a scalare fino a 40k); trattamento integrativo €1.200;
   **conguaglio annuale** a dicembre/cessazione con ricalcolo su imponibile effettivo.
-- **Addizionali**: regionale FVG (0,70% ≤15k; 1,23% sull'intero oltre) e comunale Palmanova
-  (0,50%, esenzione ≤ €18.000) — entrambe configurabili; calcolate a conguaglio e trattenute
-  a rate nell'anno successivo (11 rate saldo, 9 rate acconto comunale 30%).
+- **Addizionali**: regionale **Lombardia** progressiva per scaglioni (1,23% fino a 15.000;
+  1,58% fino a 28.000; 1,72% fino a 50.000; 1,73% oltre) e comunale **Milano** (0,80% con
+  esenzione fino a € 23.000, oltre la soglia sull'intero imponibile) — entrambe configurabili
+  dalla scheda Parametri; calcolate a conguaglio e trattenute a rate nell'anno successivo
+  (11 rate saldo, 9 rate acconto comunale 30%). Riscontro su LUL reale: imponibile 10.866,65
+  → addizionale regionale 133,66, identica al cedolino.
 - **Fondi Quadri**: Qu.A.S. €56/anno dip. + €390/anno azienda (2026; iscrizione €340 una tantum);
   Quadrifor €25 dip. + €50 azienda; Fondo EST per livelli non Quadro; previdenza complementare
   (es. Fon.Te.) 0,55% dip. + 1,55% azienda + TFR. *(Fondir/For.Te. sono fondi interprofessionali
@@ -84,7 +87,7 @@ pubblico); il **sito** invece è accessibile solo con la password. I dati inseri
 
 ## Verifica dei calcoli
 
-`node test-verifica.js` esegue **39 verifiche** con valori attesi ricalcolati a mano in modo
+`node test-verifica.js` esegue **48 verifiche** con valori attesi ricalcolati a mano in modo
 indipendente (elementi retributivi contro un LUL reale, mensilità aggiuntive, contributi, IRPEF e
 detrazioni, buoni pasto, conguaglio, massimale, contributo 1%, ratei, prospetto CU). Tutte superate.
 

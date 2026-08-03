@@ -14,6 +14,10 @@
   const r2 = (x) => Math.round((x + Number.EPSILON) * 100) / 100;
   const r5 = (x) => Math.round((x + Number.EPSILON) * 100000) / 100000;
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  // Limite superiore di uno scaglione. I parametri vengono serializzati in JSON
+  // per il salvataggio: Infinity diventa null, quindi l'ultimo scaglione (quello
+  // senza tetto) va sempre riletto come illimitato, altrimenti resterebbe non tassato.
+  const lim = (v) => (v == null || !isFinite(v)) ? Infinity : v;
 
   // ============================================================
   // PARAMETRI DI DEFAULT (modificabili dall'interfaccia)
@@ -160,15 +164,20 @@
 
     // ---------- addizionali ----------
     addizionali: {
-      regionale: {                      // default: Friuli Venezia Giulia
-        nome: 'FRIULI V.G.',
-        scaglioni: [ { fino: 15000, aliq: 0.70 }, { fino: Infinity, aliq: 1.23 } ],
-        aliquotaUnicaSoprasoglia: true  // FVG: oltre 15.000 l'aliquota si applica all'intero imponibile
+      regionale: {                      // default: Lombardia — progressiva per scaglioni
+        nome: 'LOMBARDIA',
+        scaglioni: [
+          { fino: 15000, aliq: 1.23 },
+          { fino: 28000, aliq: 1.58 },
+          { fino: 50000, aliq: 1.72 },
+          { fino: Infinity, aliq: 1.73 }
+        ],
+        aliquotaUnicaSoprasoglia: false // ogni aliquota si applica alla quota del rispettivo scaglione
       },
-      comunale: {                       // default: Palmanova (UD)
-        nome: 'PALMANOVA',
-        aliquota: 0.50,
-        esenzioneFino: 18000,
+      comunale: {                       // default: Milano (cod. F205)
+        nome: 'MILANO',
+        aliquota: 0.80,
+        esenzioneFino: 23000,           // oltre la soglia si applica sull'intero imponibile
         acconto: 30                     // % acconto anno successivo
       },
       rateSaldo: 11,                    // saldo trattenuto in 11 rate (gen-nov)
@@ -256,10 +265,11 @@
   function irpefLordaAnnua(params, anno, imponibile) {
     let imposta = 0, prev = 0;
     for (const sc of scaglioniAnno(params, anno)) {
-      const q = clamp(imponibile, prev, sc.fino) - prev;
+      const tetto = lim(sc.fino);
+      const q = clamp(imponibile, prev, tetto) - prev;
       if (q > 0) imposta += q * sc.aliq / 100;
-      prev = sc.fino;
-      if (imponibile <= sc.fino) break;
+      prev = tetto;
+      if (imponibile <= tetto) break;
     }
     return r2(imposta);
   }
@@ -294,25 +304,25 @@
   // Somma integrativa L.207/2024 (RC ≤ 20.000): % sul reddito di lavoro dipendente
   function sommaIntegrativaPct(params, RC) {
     if (RC > 20000) return 0;
-    for (const f of params.irpef.sommaIntegrativa) if (RC <= f.fino) return f.pct;
+    for (const f of params.irpef.sommaIntegrativa) if (RC <= lim(f.fino)) return f.pct;
     return 0;
   }
 
   function addizionaleRegionale(params, imponibile) {
     const reg = params.addizionali.regionale;
     if (reg.aliquotaUnicaSoprasoglia) {
-      let aliq = reg.scaglioni[0].aliq;
-      for (const s of reg.scaglioni) if (imponibile > (s.fino === Infinity ? Infinity : 0) - 1) { /* noop */ }
-      // aliquota dell'ultimo scaglione il cui limite inferiore è superato, applicata all'intero imponibile
-      let prev = 0;
-      for (const s of reg.scaglioni) { if (imponibile > prev) aliq = s.aliq; prev = s.fino; }
+      // aliquota dell'ultimo scaglione il cui limite inferiore è superato,
+      // applicata all'intero imponibile (es. Friuli Venezia Giulia)
+      let aliq = reg.scaglioni[0].aliq, prev = 0;
+      for (const s of reg.scaglioni) { if (imponibile > prev) aliq = s.aliq; prev = lim(s.fino); }
       return r2(imponibile * aliq / 100);
     }
     let imposta = 0, prev = 0;
     for (const s of reg.scaglioni) {
-      const q = clamp(imponibile, prev, s.fino) - prev;
+      const tetto = lim(s.fino);
+      const q = clamp(imponibile, prev, tetto) - prev;
       if (q > 0) imposta += q * s.aliq / 100;
-      prev = s.fino;
+      prev = tetto;
     }
     return r2(imposta);
   }
@@ -559,7 +569,9 @@
       const addReg = addizionaleRegionale(params, impFiscAnnuo);
       const addCom = addizionaleComunale(params, impFiscAnnuo);
       conguaglio = { impFiscAnnuo, lordaAnnua, detrAnnua, nettaAnnua,
-                     irpefTrattenutaAnno: r2(irpefTrattenuta + irpefNettaMese + Math.max(0, diff)),
+                     // dopo il conguaglio la ritenuta dell'anno coincide con l'imposta netta
+                     // dovuta, sia che il conguaglio risulti a debito sia a credito (rimborso)
+                     irpefTrattenutaAnno: r2(irpefTrattenuta + irpefNettaMese + diff),
                      conguaglioIrpef: diff, addRegionaleDovuta: addReg, addComunaleDovuta: addCom,
                      accontoComunale: r2(addCom * params.addizionali.comunale.acconto / 100), giorniDetrazione: ggDetrAnno };
       if (input.cessazione) {
