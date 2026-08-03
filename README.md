@@ -96,7 +96,7 @@ detrazioni, buoni pasto, conguaglio, massimale, contributo 1%, ratei, prospetto 
 - Non gestisce: malattia/maternità/infortunio con integrazione INPS, CIG, ANF/AUU, pignoramenti,
   lavoro intermittente, apprendistato, detrazioni per familiari a carico (inseribili come
   "altre detrazioni" manuali).
-- Le addizionali comunali di comuni diversi da Palmanova e gli aggiornamenti normativi futuri
+- Le addizionali di regioni e comuni diversi da Lombardia/Milano e gli aggiornamenti normativi futuri
   (nuove tranche CCNL, aliquote, massimali, coefficiente di rivalutazione TFR) vanno inseriti
   nella scheda **Parametri**.
 - Strumento di supporto gestionale: **non sostituisce il consulente del lavoro** per gli
