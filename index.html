@@ -355,6 +355,7 @@
     </div>
     <div class="actions">
       <label class="chk">Importa backup: <input type="file" id="importFile" accept=".json" onchange="importaDati(event)"></label>
+      <label class="chk"><input type="checkbox" id="importUnisci" checked> Aggiungi ai dati esistenti (se deselezionato, li sostituisce)</label>
     </div>
     <table class="lista" id="archLista" style="margin-top:10px"></table>
   </div>
@@ -997,11 +998,30 @@ function importaDati(ev) {
   r.onload = () => {
     try {
       const d = JSON.parse(r.result);
-      if (!confirm('Importare il backup? I dati attuali verranno sostituiti.')) return;
-      aziende = d.aziende || []; dipendenti = d.dipendenti || []; buste = d.buste || [];
-      if (d.params) params = d.params;
+      const unisci = chk('importUnisci');
+      if (!confirm(unisci
+        ? 'Aggiungere i dati del file a quelli già presenti?'
+        : 'Importare il backup SOSTITUENDO tutti i dati attuali?')) return;
+      if (unisci) {
+        // le voci con lo stesso identificativo vengono aggiornate, le altre aggiunte
+        const unisciElenco = (attuale, nuovo, chiave) => {
+          const out = attuale.slice();
+          for (const v of (nuovo || [])) {
+            const i = out.findIndex(x => x[chiave] === v[chiave]);
+            if (i >= 0) out[i] = v; else out.push(v);
+          }
+          return out;
+        };
+        aziende = unisciElenco(aziende, d.aziende, 'id');
+        dipendenti = unisciElenco(dipendenti, d.dipendenti, 'id');
+        buste = unisciElenco(buste, d.buste, 'key');
+      } else {
+        aziende = d.aziende || []; dipendenti = d.dipendenti || []; buste = d.buste || [];
+        if (d.params) params = d.params;
+      }
       save(LS.az, aziende); save(LS.dip, dipendenti); save(LS.buste, buste); save(LS.par, params);
-      refreshAll(); alert('Backup importato.');
+      refreshAll();
+      alert(`Importazione completata: ${aziende.length} aziende, ${dipendenti.length} dipendenti, ${buste.length} buste.`);
     } catch (e) { alert('File non valido: ' + e.message); }
   };
   r.readAsText(f);

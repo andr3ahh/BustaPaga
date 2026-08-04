@@ -196,6 +196,9 @@
       quas:      { dipAnnuo: 56,  aziendaAnnuoPerAnno: { 2025: 370, 2026: 390 }, iscrizioneAzienda: 340 },
       quadrifor: { dipAnnuo: 25,  aziendaAnnuo: 50 },
       est:       { dipMensile: 2, aziendaMensile: 10 },   // Fondo EST (livelli non Quadro)
+      // Ente Bilaterale Terziario: percentuali sulla retribuzione convenzionale
+      // (paga base + contingenza), non sulla retribuzione di fatto.
+      enteBilaterale: { dipPct: 0.05, aziendaPct: 0.10 },
       // previdenza complementare (es. Fon.Te.): % su retribuzione utile TFR
       fondoPensione: { dipPct: 0.55, aziendaPct: 1.55, tfrPct: 100 }
     },
@@ -490,7 +493,16 @@
       estDip = params.fondi.est.dipMensile;
       add({ cod: 'Z31000', descr: 'Contributo Fondo EST', trattenuta: estDip });
     }
-    trattFondi = r2(quasDip + quadriforDip + estDip);
+    // Ente Bilaterale Terziario: base convenzionale = paga base + contingenza
+    let ebtDip = 0;
+    if (emp.enteBilaterale !== false && params.fondi.enteBilaterale) {
+      const baseEbt = r2((el.pagaBase + el.contingenza) * ((emp.percPartTime || 100) / 100));
+      ebtDip = r2(baseEbt * params.fondi.enteBilaterale.dipPct / 100);
+      if (ebtDip > 0)
+        add({ cod: 'Z31005', descr: 'Contributo Ente Bilaterale Terziario',
+              base: baseEbt, qta: params.fondi.enteBilaterale.dipPct, um: '%', trattenuta: ebtDip });
+    }
+    trattFondi = r2(quasDip + quadriforDip + estDip + ebtDip);
 
     // ---------- previdenza complementare ----------
     const retribUtileTfrMese = r2(voci.filter(v => v.T).reduce((s, v) => s + (v.competenza || 0), 0));

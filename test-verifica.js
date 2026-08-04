@@ -45,10 +45,13 @@ console.log('== TEST 2: busta LUGLIO 2026 — Quadro al minimo contrattuale, con
   eq('contributi c/dip 9,3567%', c.contributiIvs, 419.09, 0.01);
   eq('Qu.A.S. c/dip (56/12)', (c.voci.find(v => v.cod === 'Z31010') || {}).trattenuta, 4.67, 0.01);
   eq('Quadrifor c/dip (25/12)', (c.voci.find(v => v.cod === 'Z31020') || {}).trattenuta, 2.08, 0.01);
-  const impFisc = Math.round((lordo - 419.09 - 4.67 - 2.08) * 100) / 100;  // 4053.60
-  eq('imponibile fiscale', c.imponibileFiscale, 4053.60, 0.01);
+  // Ente Bilaterale Terziario: 0,05% su paga base + contingenza (2.183,09 + 540,37)
+  const ebt = Math.round((2183.09 + 540.37) * 0.05) / 100;         // 1.36
+  eq('Ente Bilaterale (0,05% su convenzionale)', (c.voci.find(v => v.cod === 'Z31005') || {}).trattenuta, ebt, 0.01);
+  const impFisc = Math.round((lordo - 419.09 - 4.67 - 2.08 - ebt) * 100) / 100;  // 4052.24
+  eq('imponibile fiscale', c.imponibileFiscale, impFisc, 0.02);
   // IRPEF 2026: 23% fino 28k, 33% 28-50k su base annualizzata
-  const annuo = impFisc * 12;                                      // 48643.20
+  const annuo = impFisc * 12;
   const lordaAnnua = 28000 * 0.23 + (annuo - 28000) * 0.33;        // 13252.26
   eq('IRPEF lorda mese', c.irpefLorda, Math.round(lordaAnnua / 12 * 100) / 100, 0.01);
   // reddito annuo di riferimento (per detrazioni): mensile×14 al netto contributi
@@ -64,7 +67,7 @@ console.log('== TEST 2: busta LUGLIO 2026 — Quadro al minimo contrattuale, con
   eq('quota TFR lorda (lordo/13,5)', c.quotaTfrLorda, Math.round(lordo / 13.5 * 100) / 100, 0.01);
   eq('FAP 0,50%', c.fap, Math.round(impInps * 0.5) / 100, 0.01);
   // netto
-  const trattTot = 419.09 + 4.67 + 2.08 + irpefN;
+  const trattTot = 419.09 + 4.67 + 2.08 + ebt + irpefN;
   const nettoTeorico = lordo - trattTot;
   eq('netto (arrotondato all\'euro)', c.netto, Math.round(nettoTeorico), 0.51);
   // netto = competenze − trattenute + arrotondamento (a pareggio dell'euro)
