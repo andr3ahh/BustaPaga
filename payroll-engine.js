@@ -356,7 +356,11 @@
    * storico: array di buste salvate (stesso anno, stesso dipendente) per progressivi/conguaglio
    */
   function calcolaBusta(params, company, emp, input, storico) {
-    storico = (storico || []).filter(b => b.anno === input.anno && b.mese < input.mese);
+    const tipoCedolino = input.tipo || 'ordinaria';
+    // Storico dell'anno: i mesi precedenti e, nello stesso mese, i cedolini di
+    // tipo diverso già emessi (es. la 13ª rispetto alla busta di dicembre).
+    storico = (storico || []).filter(b => b.anno === input.anno &&
+      (b.mese < input.mese || (b.mese === input.mese && (b.tipo || 'ordinaria') !== tipoCedolino)));
     const anno = input.anno, mese = input.mese;
     const dataRef = `${anno}-${String(mese).padStart(2, '0')}-01`;
     const ggMese = new Date(anno, mese, 0).getDate();
@@ -365,45 +369,64 @@
     const voci = [];
     const add = (v) => { voci.push(v); return v; };
 
-    // ---------- retribuzione ordinaria (mensilizzata) ----------
-    const giorniRetribuiti = (input.giorniRetribuiti != null) ? input.giorniRetribuiti : cc.divisoreGiornaliero;
-    const quotaMese = giorniRetribuiti >= cc.divisoreGiornaliero ? 1 : giorniRetribuiti / cc.divisoreGiornaliero;
-    const retribOrdinaria = r2(el.totale * quotaMese);
-    add({ cod: 'Z00001', descr: 'Retribuzione', dec5: true, um: 'GG', qta: giorniRetribuiti,
-          base: el.giornaliera, competenza: retribOrdinaria, C: 1, I: 1, T: 1 });
+    // Tipo di cedolino. Le mensilità aggiuntive sono documenti autonomi: non
+    // vanno inserite nel cedolino del mese, che resterebbe gonfiato nel lordo,
+    // nei contributi e nell'imposta. Alla cessazione i ratei maturati di 13ª e
+    // 14ª sono invece liquidati nel cedolino finale.
+    const tipo = tipoCedolino;
+    const mensilitaAgg = (tipo === '13ma' || tipo === '14ma');
 
-    // voci informative presenze (non modificano il lordo: retribuzione mensilizzata)
-    if (input.ferieGodute)   add({ cod: 'Z00250', descr: 'Ferie godute', dec5: true, um: 'GG', qta: input.ferieGodute, base: el.giornaliera, C:0,I:0,T:0, info: true });
-    if (input.rolGodute)     add({ cod: 'Z00252', descr: 'Permessi Rol goduti', dec5: true, um: 'ORE', qta: input.rolGodute, base: el.oraria, C:0,I:0,T:0, info: true });
-    if (input.exFestGodute)  add({ cod: 'Z00253', descr: "Permessi Ex-Fs goduti", dec5: true, um: 'ORE', qta: input.exFestGodute, base: el.oraria, C:0,I:0,T:0, info: true });
-    if (input.festivita)     add({ cod: 'Z00230', descr: "Festivita'", dec5: true, um: 'GG', qta: input.festivita, base: el.giornaliera, C:0,I:0,T:0, info: true });
+    if (!mensilitaAgg) {
+      // ---------- retribuzione ordinaria (mensilizzata) ----------
+      const giorniRetribuiti = (input.giorniRetribuiti != null) ? input.giorniRetribuiti : cc.divisoreGiornaliero;
+      const quotaMese = giorniRetribuiti >= cc.divisoreGiornaliero ? 1 : giorniRetribuiti / cc.divisoreGiornaliero;
+      const retribOrdinaria = r2(el.totale * quotaMese);
+      add({ cod: 'Z00001', descr: 'Retribuzione', dec5: true, um: 'GG', qta: giorniRetribuiti,
+            base: el.giornaliera, competenza: retribOrdinaria, C: 1, I: 1, T: 1 });
 
-    // ---------- straordinari ----------
-    const st = cc.maggiorazioni;
-    const straord = [
-      ['Z01001', 'Straordinario feriale',  input.oreStraordinario,  st.straordinario],
-      ['Z01002', 'Straordinario festivo',  input.oreStraordFestivo, st.festivo],
-      ['Z01003', 'Straordinario notturno', input.oreStraordNotturno, st.notturno]
-    ];
-    for (const [cod, descr, ore, magg] of straord) {
-      if (ore > 0) {
-        const base = r5(el.oraria * (1 + magg / 100));
-        add({ cod, descr: `${descr} +${magg}%`, um: 'ORE', qta: ore, base, competenza: r2(base * ore), C:1, I:1, T:1 });
+      // voci informative presenze (non modificano il lordo: retribuzione mensilizzata)
+      if (input.ferieGodute)   add({ cod: 'Z00250', descr: 'Ferie godute', dec5: true, um: 'GG', qta: input.ferieGodute, base: el.giornaliera, C:0,I:0,T:0, info: true });
+      if (input.rolGodute)     add({ cod: 'Z00252', descr: 'Permessi Rol goduti', dec5: true, um: 'ORE', qta: input.rolGodute, base: el.oraria, C:0,I:0,T:0, info: true });
+      if (input.exFestGodute)  add({ cod: 'Z00253', descr: "Permessi Ex-Fs goduti", dec5: true, um: 'ORE', qta: input.exFestGodute, base: el.oraria, C:0,I:0,T:0, info: true });
+      if (input.festivita)     add({ cod: 'Z00230', descr: "Festivita'", dec5: true, um: 'GG', qta: input.festivita, base: el.giornaliera, C:0,I:0,T:0, info: true });
+
+      // ---------- straordinari ----------
+      const st = cc.maggiorazioni;
+      const straord = [
+        ['Z01001', 'Straordinario feriale',  input.oreStraordinario,  st.straordinario],
+        ['Z01002', 'Straordinario festivo',  input.oreStraordFestivo, st.festivo],
+        ['Z01003', 'Straordinario notturno', input.oreStraordNotturno, st.notturno]
+      ];
+      for (const [cod, descr, ore, magg] of straord) {
+        if (ore > 0) {
+          const base = r5(el.oraria * (1 + magg / 100));
+          add({ cod, descr: `${descr} +${magg}%`, um: 'ORE', qta: ore, base, competenza: r2(base * ore), C:1, I:1, T:1 });
+        }
       }
     }
 
     // ---------- mensilità aggiuntive ----------
-    // 13ª: erogata a dicembre (maturazione gen-dic); 14ª: a luglio (maturazione lug-giu)
-    const mesiRateo = mesiMaturatiNellAnno(emp, anno, mese);
-    if (mese === 12 || (input.cessazione && mese !== 7)) {
-      const q = (mese === 12 ? mesiRateo : mesiRateo) / 12;
-      const imp = r2(el.totale * q);
-      if (imp > 0) add({ cod: 'Z50000', descr: "13ma Mensilita'", um: 'MESI', qta: r2(q * 12), base: r5(el.totale / 12), competenza: imp, C:1, I:1, T:1 });
-    }
-    if (mese === 7 || (input.cessazione && mese !== 12)) {
-      const mesi14 = mesi14Maturati(emp, anno, mese, input.cessazione);
-      const imp = r2(el.totale * mesi14 / 12);
-      if (imp > 0) add({ cod: 'Z50002', descr: "14ma Mensilita'", um: 'MESI', qta: mesi14, base: r5(el.totale / 12), competenza: imp, C:1, I:1, T:1 });
+    // Cedolino autonomo di 13ª (erogata a dicembre, maturazione gen-dic) o di
+    // 14ª (erogata a luglio, maturazione lug-giu). Alla cessazione i ratei
+    // maturati di entrambe confluiscono nel cedolino ordinario finale.
+    const ratei13 = () => {
+      const q = mesiMaturatiNellAnno(emp, anno, mese) / 12;
+      return { qta: r2(q * 12), imp: r2(el.totale * q) };
+    };
+    const ratei14 = () => {
+      const m = mesi14Maturati(emp, anno, mese, input.cessazione);
+      return { qta: m, imp: r2(el.totale * m / 12) };
+    };
+    if (tipo === '13ma') {
+      const { qta, imp } = ratei13();
+      if (imp > 0) add({ cod: 'Z50000', descr: "13ma Mensilita'", um: 'MESI', qta, base: r5(el.totale / 12), competenza: imp, C:1, I:1, T:1 });
+    } else if (tipo === '14ma') {
+      const { qta, imp } = ratei14();
+      if (imp > 0) add({ cod: 'Z50002', descr: "14ma Mensilita'", um: 'MESI', qta, base: r5(el.totale / 12), competenza: imp, C:1, I:1, T:1 });
+    } else if (input.cessazione) {
+      const r13 = ratei13(), r14 = ratei14();
+      if (r13.imp > 0) add({ cod: 'Z50001', descr: "Ratei 13ma Mensilita'", um: 'MESI', qta: r13.qta, base: r5(el.totale / 12), competenza: r13.imp, C:1, I:1, T:1 });
+      if (r14.imp > 0) add({ cod: 'Z50003', descr: "Ratei 14ma Mensilita'", um: 'MESI', qta: r14.qta, base: r5(el.totale / 12), competenza: r14.imp, C:1, I:1, T:1 });
     }
 
     // ---------- bonus / una tantum ----------
@@ -412,7 +435,7 @@
 
     // ---------- buoni pasto ----------
     let bpEccedenza = 0, bpTotale = 0;
-    if (input.buoniPastoGiorni > 0 && input.buoniPastoValore > 0) {
+    if (!mensilitaAgg && input.buoniPastoGiorni > 0 && input.buoniPastoValore > 0) {
       const wf = params.welfare.buonoPastoEsentePerAnno;
       const soglie = wf[anno] || wf[Math.max(...Object.keys(wf).map(Number))];
       const esente = input.buoniPastoTipo === 'cartaceo' ? soglie.cartaceo : soglie.elettronico;
@@ -501,10 +524,13 @@
             qta: params.inps.aliquotaAggiuntiva, um: '%', trattenuta: contributoAggiuntivo });
 
     // ---------- fondi contrattuali ----------
+    // Quote fisse mensili ai fondi contrattuali: si addebitano una sola volta al
+    // mese, sul cedolino ordinario, non anche su tredicesima e quattordicesima.
     let trattFondi = 0, quasDip = 0, quadriforDip = 0, estDip = 0;
     const liv = emp.livello || 'QUADRO';
     if (emp.quas === undefined) emp.quas = (liv === 'QUADRO');
-    if (liv === 'QUADRO') {
+    if (mensilitaAgg) { /* nessuna quota fissa sul cedolino di mensilità aggiuntiva */ }
+    else if (liv === 'QUADRO') {
       if (emp.quas)      { quasDip = r2(params.fondi.quas.dipAnnuo / 12);      add({ cod: 'Z31010', descr: 'Contributo Qu.A.S.', trattenuta: quasDip }); }
       if (emp.quadrifor !== false) { quadriforDip = r2(params.fondi.quadrifor.dipAnnuo / 12); add({ cod: 'Z31020', descr: 'Contributo Quadrifor', trattenuta: quadriforDip }); }
     } else if (emp.fondoEst !== false) {
@@ -516,7 +542,7 @@
     // contrattuale e non obbligatorio per legge, la quota del dipendente non si
     // deduce dall'imponibile IRPEF e la quota aziendale vi concorre.
     let ebtDip = 0, ebtAzienda = 0;
-    if (emp.enteBilaterale !== false && params.fondi.enteBilaterale) {
+    if (!mensilitaAgg && emp.enteBilaterale !== false && params.fondi.enteBilaterale) {
       const baseEbt = r2((el.pagaBase + el.contingenza) * ((emp.percPartTime || 100) / 100));
       ebtDip = r2(baseEbt * params.fondi.enteBilaterale.dipPct / 100);
       ebtAzienda = r2(baseEbt * params.fondi.enteBilaterale.aziendaPct / 100);
@@ -566,16 +592,34 @@
     // così mensilità aggiuntive e variabili non fanno scattare aliquote eccessive.
     // Metodo 'annualizzato': ogni mese è tassato come se si ripetesse dodici volte.
     let irpefLordaMese;
-    const mesiElaborati = storico.length + 1;
-    if ((params.irpef.metodo || 'progressivo') === 'progressivo') {
-      const impYTD = r2(storico.reduce((s, b) => s + (b.imponibileFiscale || 0), 0) + imponibileFiscale);
-      const lordaYTD = r2(irpefLordaAnnua(params, anno, impYTD / mesiElaborati * 12) * mesiElaborati / 12);
-      const lordaGia = r2(storico.reduce((s, b) => s + (b.irpefLorda || 0), 0));
+    const mesiElaborati = new Set(storico.map(b => b.mese).concat([mese])).size;
+    const progressivo = (params.irpef.metodo || 'progressivo') === 'progressivo';
+    if (mensilitaAgg) {
+      // Cedolino di mensilità aggiuntiva: l'imposta è la differenza fra quella
+      // dovuta sul reddito ordinario dell'anno e quella dovuta aggiungendovi la
+      // mensilità, cioè l'aliquota marginale. Proiettare la mensilità su dodici
+      // mesi, come se fosse ricorrente, produrrebbe un'imposta molto maggiore.
+      const ordinarie = storico.filter(b => (b.tipo || 'ordinaria') === 'ordinaria');
+      const mesiOrd = new Set(ordinarie.map(b => b.mese)).size || 1;
+      const baseOrdAnnua = ordinarie.reduce((s, b) => s + (b.imponibileFiscale || 0), 0) / mesiOrd * 12;
+      const senza = irpefLordaAnnua(params, anno, baseOrdAnnua);
+      const con = irpefLordaAnnua(params, anno, baseOrdAnnua + imponibileFiscale);
+      irpefLordaMese = r2(Math.max(0, con - senza));
+    } else if (progressivo) {
+      // Cedolino ordinario: imposta sul cumulato dell'anno proiettato a dodici
+      // mesi, al netto di quanto già tassato sulle buste ordinarie precedenti.
+      const ordinarie = storico.filter(b => (b.tipo || 'ordinaria') === 'ordinaria');
+      const impYTD = r2(ordinarie.reduce((s, b) => s + (b.imponibileFiscale || 0), 0) + imponibileFiscale);
+      const mesiOrd = new Set(ordinarie.map(b => b.mese).concat([mese])).size;
+      const lordaYTD = r2(irpefLordaAnnua(params, anno, impYTD / mesiOrd * 12) * mesiOrd / 12);
+      const lordaGia = r2(ordinarie.reduce((s, b) => s + (b.irpefLorda || 0), 0));
       irpefLordaMese = r2(Math.max(0, lordaYTD - lordaGia));
     } else {
       irpefLordaMese = r2(irpefLordaAnnua(params, anno, imponibileFiscale * 12) / 12);
     }
-    const ggDetrazione = (input.giorniDetrazione != null) ? input.giorniDetrazione : ggMese;
+    const ggDetrazione = mensilitaAgg
+      ? (input.detrazioniSuMensilita ? (input.giorniDetrazione || 0) : 0)
+      : ((input.giorniDetrazione != null) ? input.giorniDetrazione : ggMese);
     const detrLavAnnua = detrazioneLavoroAnnua(params, redditoAnnuo, 365, emp.tempoDeterminato);
     const detrLavMese = r2(detrLavAnnua * ggDetrazione / 365);
     const ultDetrAnnua = ulterioreDetrazioneAnnua(params, redditoAnnuo, 365);
@@ -616,7 +660,8 @@
     // CONGUAGLIO DI FINE ANNO (dicembre o cessazione)
     // ============================================================
     let conguaglio = null;
-    const fareConguaglio = input.conguaglio != null ? input.conguaglio : (mese === 12 || input.cessazione);
+    const fareConguaglio = input.conguaglio != null ? input.conguaglio
+      : ((mese === 12 && !mensilitaAgg) || input.cessazione);
     if (fareConguaglio) {
       const impFiscAnnuo = r2(storico.reduce((s, b) => s + (b.imponibileFiscale || 0), 0) + imponibileFiscale);
       const irpefTrattenuta = r2(storico.reduce((s, b) => s + (b.irpefNetta || 0), 0));
@@ -666,7 +711,7 @@
     // ============================================================
     // RATEI FERIE/PERMESSI
     // ============================================================
-    const contaMese = meseMaturaRateo(emp, anno, mese);
+    const contaMese = !mensilitaAgg && meseMaturaRateo(emp, anno, mese);
     // ferie annue: 26 giorni su settimana di 6 giorni, 22 su settimana di 5.
     // Impostabile sul singolo dipendente, altrimenti vale il dato di contratto.
     const ferieAnno = (emp.ferieGiorniAnno != null && emp.ferieGiorniAnno > 0)
@@ -688,7 +733,10 @@
       irpefPagata: r2(storico.reduce((s, b) => s + (b.irpefNetta || 0), 0) + irpefNettaMese
         + (conguaglio ? Math.max(0, conguaglio.conguaglioIrpef) : 0)),
       contributi: r2(storico.reduce((s, b) => s + (b.contributiDip || 0), 0) + contributiIvs + contributoAggiuntivo),
-      tfrAnno: r2(storico.reduce((s, b) => s + (b.quotaTfrNetta || 0), 0) + quotaTfrNetta)
+      tfrAnno: r2(storico.reduce((s, b) => s + (b.quotaTfrNetta || 0), 0) + quotaTfrNetta),
+      // fondo complessivo: riporto degli anni precedenti più le quote dell'anno
+      tfrFondo: r2((emp.tfrFondoAP || 0)
+        + storico.reduce((s, b) => s + (b.quotaTfrNetta || 0), 0) + quotaTfrNetta)
     };
 
     // ---------- costo azienda (prospetto) ----------
@@ -708,7 +756,8 @@
       + costoAzienda.estAzienda + costoAzienda.fondoPensioneAzienda);
 
     return {
-      anno, mese, dataRef, ggMese,
+      anno, mese, tipo, dataRef, ggMese,
+      centroCosto: emp.centroCosto || company.centroCosto || '',
       elementi: el, voci,
       imponibileInps, aliquotaDip: aliqDip,
       contributiDip: r2(contributiIvs + contributoAggiuntivo),

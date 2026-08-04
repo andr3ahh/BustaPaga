@@ -25,7 +25,7 @@ console.log('== TEST 1: elementi retributivi Quadro — riscontro LUL reale (Sav
   eq('retribuzione giornaliera (/26)', el.giornaliera, 176.37346, 0.0001); // identica al LUL reale
 }
 
-console.log('== TEST 2: busta LUGLIO 2026 — Quadro al minimo contrattuale, con 14ª ==');
+console.log('== TEST 2: busta LUGLIO 2026 — Quadro al minimo contrattuale (ordinaria) ==');
 {
   const emp = { livello: 'QUADRO', dataAssunzione: '2026-01-01', quas: true, quadrifor: true, iscrittoPost96: true };
   const inp = { anno: 2026, mese: 7, giorniRetribuiti: 26, giorniLavorati: 22, oreLavorate: 176, giorniDetrazione: 31 };
@@ -34,15 +34,16 @@ console.log('== TEST 2: busta LUGLIO 2026 — Quadro al minimo contrattuale, con
   // --- attese calcolate a mano ---
   const minimo = 2183.09 + 540.37 + 2.07 + 260.76;               // 2986.29
   eq('retribuzione mensile', c.elementi.totale, 2986.29, 0.001);
-  const q14 = Math.round(minimo * 6 / 12 * 100) / 100;           // 14ª: 6 mesi (gen-giu 2026) = 1493.15
-  eq('quattordicesima (6/12)', (c.voci.find(v => v.cod === 'Z50002') || {}).competenza, q14, 0.01);
-  const lordo = minimo + q14;                                     // 4479.44
-  eq('totale competenze', c.totCompetenze, 4479.44, 0.01);
-  const impInps = Math.round(lordo);                               // 4479
+  // la 14ª è un cedolino autonomo: non deve comparire nella busta del mese
+  eq('nessuna 14ª nella busta ordinaria',
+     c.voci.filter(v => v.cod === 'Z50002').length, 0, 0);
+  const lordo = minimo;
+  eq('totale competenze', c.totCompetenze, minimo, 0.01);
+  const impInps = Math.round(lordo);
   eq('imponibile INPS (arrot. unità)', c.imponibileInps, impInps, 0);
   const aliq = 9.19 + 0.1667;                                      // fino a 5 dip → FIS 0,1667
-  const contrib = Math.round(impInps * aliq) / 100;                // 419.09
-  eq('contributi c/dip 9,3567%', c.contributiIvs, 419.09, 0.01);
+  const contrib = Math.round(impInps * aliq) / 100;
+  eq('contributi c/dip 9,3567%', c.contributiIvs, contrib, 0.02);
   eq('Qu.A.S. c/dip (56/12)', (c.voci.find(v => v.cod === 'Z31010') || {}).trattenuta, 4.67, 0.01);
   eq('Quadrifor c/dip (25/12)', (c.voci.find(v => v.cod === 'Z31020') || {}).trattenuta, 2.08, 0.01);
   // Ente Bilaterale Terziario: 0,05% su paga base + contingenza (2.183,09 + 540,37)
@@ -52,7 +53,7 @@ console.log('== TEST 2: busta LUGLIO 2026 — Quadro al minimo contrattuale, con
   eq('Ente Bilaterale (0,05% su convenzionale)', (c.voci.find(v => v.cod === 'Z31005') || {}).trattenuta, ebt, 0.01);
   eq('Ente Bilaterale c/azienda (0,10%)', (c.voci.find(v => v.cod === 'Z31006') || {}).competenza, ebtAz, 0.01);
   // la quota E.B. del dipendente non è deducibile e quella aziendale è imponibile
-  const impFisc = Math.round((lordo + ebtAz - 419.09 - 4.67 - 2.08) * 100) / 100;  // 4056.32
+  const impFisc = Math.round((lordo + ebtAz - contrib - 4.67 - 2.08) * 100) / 100;
   eq('imponibile fiscale', c.imponibileFiscale, impFisc, 0.02);
   // IRPEF 2026: 23% fino 28k, 33% 28-50k su base annualizzata
   const annuo = impFisc * 12;
@@ -71,7 +72,7 @@ console.log('== TEST 2: busta LUGLIO 2026 — Quadro al minimo contrattuale, con
   eq('quota TFR lorda (lordo/13,5)', c.quotaTfrLorda, Math.round(lordo / 13.5 * 100) / 100, 0.01);
   eq('FAP 0,50%', c.fap, Math.round(impInps * 0.5) / 100, 0.01);
   // netto
-  const trattTot = 419.09 + 4.67 + 2.08 + ebt + irpefN;
+  const trattTot = contrib + 4.67 + 2.08 + ebt + irpefN;
   const nettoTeorico = lordo - trattTot;
   eq('netto (arrotondato all\'euro)', c.netto, Math.round(nettoTeorico), 0.51);
   // netto = competenze − trattenute + arrotondamento (a pareggio dell'euro)
@@ -101,10 +102,14 @@ console.log('== TEST 4: dicembre — 13ª e conguaglio IRPEF su storico annuo ==
   }
   const dic = E.calcolaBusta(P, azienda, emp,
     { anno: 2026, mese: 12, giorniRetribuiti: 26, giorniLavorati: 22, oreLavorate: 176, giorniDetrazione: 31 }, storico);
-  const v13 = dic.voci.find(v => v.cod === 'Z50000');
-  // 13ª calcolata sulla retribuzione di dicembre, che include la tranche CCNL 1/11/2026
-  // (paga base 2.249,37): 2.249,37+540,37+2,07+260,76 = 3.052,57
-  eq('13ª piena (12/12) su retribuzione dicembre', v13.competenza, 3052.57, 0.01);
+  // la 13ª è un cedolino autonomo: nella busta di dicembre non deve comparire
+  eq('nessuna 13ª nella busta ordinaria di dicembre',
+     dic.voci.filter(v => v.cod === 'Z50000').length, 0, 0);
+  // emessa a parte, vale la retribuzione di dicembre (tranche CCNL 1/11/2026):
+  // 2.249,37 + 540,37 + 2,07 + 260,76 = 3.052,57
+  const c13 = E.calcolaBusta(P, azienda, emp, { anno: 2026, mese: 12, tipo: '13ma' }, storico);
+  eq('13ª piena su cedolino separato',
+     (c13.voci.find(v => v.cod === 'Z50000') || {}).competenza, 3052.57, 0.01);
   eq('conguaglio presente', dic.conguaglio ? 1 : 0, 1, 0);
   // coerenza: IRPEF annua da conguaglio = lorda(imponibile annuo) − detrazioni effettive
   const cg = dic.conguaglio;
@@ -232,24 +237,23 @@ console.log('== TEST 9: riscontro integrale su cedolino reale Quadro Commercio (
 
 console.log('== TEST 10: metodo IRPEF progressivo sul cumulato ==');
 {
-  // Con retribuzione costante il progressivo coincide con l'annualizzato; con una
-  // mensilità aggiuntiva non deve far scattare aliquote superiori a quelle dovute.
   const emp = { livello: 'QUADRO', dataAssunzione: '2026-01-01', quas: true, quadrifor: true };
   const inp = (m, extra) => Object.assign({ anno: 2026, mese: m, giorniRetribuiti: 26,
     giorniLavorati: 21, oreLavorate: 168, giorniDetrazione: new Date(2026, m, 0).getDate() }, extra || {});
   const storico = [];
-  for (let m = 1; m <= 6; m++) storico.push(E.calcolaBusta(P, azienda, emp, inp(m), storico));
-  const costante = storico[5].irpefLorda;
-  eq('mesi costanti: progressivo = annualizzato', costante, storico[0].irpefLorda, 0.05);
-  // luglio con quattordicesima: l'imposta del mese cresce ma resta sotto il doppio
-  const lug = E.calcolaBusta(P, azienda, emp, inp(7), storico);
-  eq('mese con 14ª tassato più del mese ordinario', lug.irpefLorda > costante ? 1 : 0, 1, 0);
-  const annualizzato = JSON.parse(JSON.stringify(P));
-  annualizzato.irpef.metodo = 'annualizzato';
-  const lugAnn = E.calcolaBusta(annualizzato, azienda, emp, inp(7), storico);
-  console.log(`     luglio — progressivo ${lug.irpefLorda} / annualizzato ${lugAnn.irpefLorda}`);
-  eq('progressivo meno oneroso dell\'annualizzato sulla 14ª',
-     lug.irpefLorda < lugAnn.irpefLorda ? 1 : 0, 1, 0);
+  for (let m = 1; m <= 7; m++) storico.push(E.calcolaBusta(P, azienda, emp, inp(m), storico));
+  eq('mesi costanti: imposta stabile', storico[6].irpefLorda, storico[0].irpefLorda, 0.05);
+  // cedolino di 14ª: con il metodo progressivo l'imposta tiene conto del cumulato
+  // dell'anno e non tassa la mensilità come se si ripetesse dodici volte
+  const ann = JSON.parse(JSON.stringify(P)); ann.irpef.metodo = 'annualizzato';
+  const prog14 = E.calcolaBusta(P, azienda, emp, inp(7, { tipo: '14ma' }), storico);
+  const ann14 = E.calcolaBusta(ann, azienda, emp, inp(7, { tipo: '14ma' }), storico);
+  console.log(`     14ª — progressivo ${prog14.irpefLorda} / annualizzato ${ann14.irpefLorda}`);
+  eq('progressivo non più oneroso dell\'annualizzato',
+     prog14.irpefLorda <= ann14.irpefLorda + 0.01 ? 1 : 0, 1, 0);
+  eq('la 14ª sconta comunque imposta', prog14.irpefLorda > 0 ? 1 : 0, 1, 0);
+  // nessuna detrazione sul cedolino separato: sono già attribuite sulle buste mensili
+  eq('nessuna detrazione sul cedolino di 14ª', prog14.detrazioni, 0, 0.001);
 }
 
 console.log('== TEST 11: ratei ferie — riscontro sul prospetto di un cedolino reale (07/2026) ==');

@@ -264,6 +264,8 @@
       <label class="f">Ferie giorni/anno (26 su 6 gg, 22 su 5 gg)<input id="d_ferieanno" type="number" step="0.01" placeholder="26"></label>
       <label class="f">ROL ore/anno<input id="d_rol" type="number" value="72"></label>
       <label class="f">Ferie residue al 31/12 anno prec. (gg)<input id="d_ferieres" type="number" step="0.01" value="0"></label>
+      <label class="f">Fondo TFR al 31/12 anno prec. €<input id="d_tfrap" type="number" step="0.01" value="0"></label>
+      <label class="f">Centro di costo<input id="d_centrocosto" placeholder="es. 9545 - IT"></label>
       <label class="f">ROL residui iniziali (ore)<input id="d_rolres" type="number" step="0.01" value="0"></label>
       <label class="f">Ex-festività residue iniziali (ore)<input id="d_exfres" type="number" step="0.01" value="0"></label>
       <label class="f">Modalità pagamento<input id="d_modpag" value="BONIFICO BANCARIO"></label>
@@ -305,10 +307,20 @@
       <label class="f">Dipendente<select id="e_dip" onchange="precompilaElabora()"></select></label>
       <label class="f">Anno<input id="e_anno" type="number" onchange="precompilaElabora()"></label>
       <label class="f">Mese<select id="e_mese" onchange="precompilaElabora()"></select></label>
+      <label class="f">Tipo di cedolino
+        <select id="e_tipo" onchange="cambiaTipo()">
+          <option value="ordinaria">Mensile ordinaria</option>
+          <option value="13ma">Tredicesima (cedolino separato)</option>
+          <option value="14ma">Quattordicesima (cedolino separato)</option>
+        </select></label>
     </div>
   </div>
-  <div class="card">
+  <div class="card" id="cardPresenze">
     <h2>Presenze e variabili del mese</h2>
+    <p class="note" id="notaTipo" style="display:none;margin-bottom:10px">La tredicesima e la quattordicesima
+    sono cedolini autonomi: contengono solo la mensilità maturata, con i relativi contributi e ritenute.
+    Presenze, buoni pasto e ratei di ferie e permessi restano sul cedolino ordinario del mese.
+    Le detrazioni non si applicano, essendo già attribuite sulle buste mensili.</p>
     <div class="grid g4">
       <label class="f">Giorni retribuiti (mensilizzato = 26)<input id="e_ggretrib" type="number" step="0.01" value="26"></label>
       <label class="f">Giorni lavorati<input id="e_gglav" type="number" step="0.5" value="20"></label>
@@ -595,6 +607,7 @@ function salvaDipendente() {
     scattiManuali: val('d_scatti') === '' ? null : parseInt(val('d_scatti')),
     terzoElemento: val('d_terzoel') === '' ? null : num('d_terzoel'),
     ferieGiorniAnno: val('d_ferieanno') === '' ? null : num('d_ferieanno'),
+    tfrFondoAP: num('d_tfrap'), centroCosto: val('d_centrocosto'),
     rolOreAnno: num('d_rol') || 72,
     ferieResidueIniziali: num('d_ferieres'), rolResidueIniziali: num('d_rolres'), exFestResidueIniziali: num('d_exfres'),
     modalitaPagamento: val('d_modpag'), iban: val('d_iban').toUpperCase(),
@@ -625,6 +638,7 @@ function editDipendente(id) {
   set('d_scatti', d.scattiManuali == null ? '' : d.scattiManuali);
   set('d_terzoel', d.terzoElemento == null ? '' : d.terzoElemento);
   set('d_ferieanno', d.ferieGiorniAnno == null ? '' : d.ferieGiorniAnno);
+  set('d_tfrap', d.tfrFondoAP || 0); set('d_centrocosto', d.centroCosto || '');
   set('d_rol', d.rolOreAnno || 72); set('d_ferieres', d.ferieResidueIniziali || 0);
   set('d_rolres', d.rolResidueIniziali || 0); set('d_exfres', d.exFestResidueIniziali || 0);
   set('d_modpag', d.modalitaPagamento || 'BONIFICO BANCARIO'); set('d_iban', d.iban || '');
@@ -687,7 +701,25 @@ function precompilaElabora() {
     set('e_addcom', mese <= 11 ? (Math.max(0, cgPrec.addComunaleDovuta - accTratt) / 11).toFixed(2) : 0);
     set('e_addacc', (mese >= 3 && mese <= 11) ? (cgPrec.accontoComunale / 9).toFixed(2) : 0);
   } else { set('e_addreg', 0); set('e_addcom', 0); set('e_addacc', 0); }
-  document.getElementById('e_conguaglio').checked = (mese === 12);
+  document.getElementById('e_conguaglio').checked = (mese === 12 && val('e_tipo') === 'ordinaria');
+  cambiaTipo();
+}
+
+// Adatta il modulo al tipo di cedolino: sulle mensilità aggiuntive i campi di
+// presenza non hanno effetto, quindi vengono disattivati per non trarre in inganno.
+function cambiaTipo() {
+  const agg = val('e_tipo') !== 'ordinaria';
+  document.getElementById('notaTipo').style.display = agg ? 'block' : 'none';
+  const campi = ['e_ggretrib','e_gglav','e_orelav','e_ferie','e_rol','e_exfest','e_festivita',
+                 'e_str15','e_str30','e_str50','e_bpgg','e_bpval','e_bptipo'];
+  for (const id of campi) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.disabled = agg;
+    el.closest('label').style.opacity = agg ? 0.45 : 1;
+  }
+  set('e_ggdetr', agg ? 0 : new Date(parseInt(val('e_anno')), parseInt(val('e_mese')), 0).getDate());
+  if (agg) document.getElementById('e_conguaglio').checked = false;
 }
 
 function inputElabora() {
@@ -703,6 +735,7 @@ function inputElabora() {
     fringeBenefit: num('e_fringe'), fringeBenefitImponibile: chk('e_fringeimp'),
     rataAddRegionale: num('e_addreg'), rataAddComunale: num('e_addcom'), rataAccontoComunale: num('e_addacc'),
     arrotondamentoPrecedente: num('e_arrprec'),
+    tipo: val('e_tipo'),
     vociExtra: vociTab.extra.filter(v => v.importo),
     cessazione: chk('e_cessazione'), conguaglio: chk('e_conguaglio') || undefined
   };
@@ -716,7 +749,8 @@ function anteprimaBusta() {
     const dip = dipendenti.find(d => d.id === val('e_dip'));
     if (!az || !dip) throw new Error('Selezionare azienda e dipendente');
     const inp = inputElabora();
-    const storico = busteDi(dip.id, inp.anno).map(b => b.calc);
+    const storico = busteDi(dip.id, inp.anno)
+      .map(b => Object.assign({ tipo: (b.input && b.input.tipo) || 'ordinaria' }, b.calc));
     const calc = E.calcolaBusta(params, az, dip, inp, storico);
     ultimaAnteprima = { az, dip, inp, calc };
     document.getElementById('anteprimaWrap').style.display = 'block';
@@ -730,7 +764,7 @@ function salvaBusta() {
   anteprimaBusta();
   if (!ultimaAnteprima) return;
   const { az, dip, inp, calc } = ultimaAnteprima;
-  const key = dip.id + '_' + inp.anno + '_' + inp.mese;
+  const key = dip.id + '_' + inp.anno + '_' + inp.mese + '_' + (inp.tipo || 'ordinaria');
   const i = buste.findIndex(b => b.key === key);
   // numero LUL: mantiene quello già assegnato in caso di rielaborazione
   calc.numeroLul = (i >= 0 && buste[i].calc.numeroLul) || prossimoNumeroLul(az);
@@ -838,7 +872,7 @@ function renderLUL(az, dip, inp, c) {
           <div class="zval">${esc(az.sede || '')}</div>`, 'flex:1;border-top:0')}
       </div>
       <div style="padding:3px 4px 0;font-size:9.5px">
-        <div>Centro di costo : ${esc(az.centroCosto || '')}</div>
+        <div>Centro di costo : ${esc(c.centroCosto || '')}</div>
         <div>TipoCosto : ${esc(az.tipoCosto || '')}</div>
       </div>
     </div>
@@ -854,7 +888,8 @@ function renderLUL(az, dip, inp, c) {
       </div>
       <div class="zgreen" style="margin-top:4px">
         <div class="zbar" style="border-radius:5px 5px 0 0">PERIODO DI RETRIBUZIONE</div>
-        <div class="zval b" style="padding:3px 5px 4px">${MESI[c.mese - 1]} ${c.anno}</div>
+        <div class="zval b" style="padding:3px 5px 4px">${MESI[c.mese - 1]} ${c.anno}${
+          c.tipo === '13ma' ? ' — 13ª mensilità' : c.tipo === '14ma' ? ' — 14ª mensilità' : ''}</div>
       </div>
     </div>
   </div>
@@ -970,6 +1005,7 @@ function renderLUL(az, dip, inp, c) {
       <span style="flex:1">Retrib. utile <b>${fmt(c.retribUtileTfr)}</b></span>
       <span style="flex:1">Quota mese <b>${fmt(c.quotaTfrNetta)}</b></span>
       <span style="flex:1">TFR anno <b>${fmt(pr.tfrAnno)}</b></span>
+      <span style="flex:1">Fondo TFR <b>${fmt(pr.tfrFondo)}</b></span>
       <span style="flex:1">a F.do pensione <b>${c.tfrAFondo ? fmt(c.tfrAFondo) : '—'}</b></span>
       <span style="flex:1">Quota FAP <b>${fmt(c.fap)}</b></span>
     </div>`, 'border-top:0')}
@@ -1009,10 +1045,13 @@ function renderArchivio() {
     .filter(b => (!azF || b.aziendaId === azF) && (!dipF || b.dipId === dipF) && (!annoF || String(b.anno) === annoF))
     .sort((a, b) => b.anno - a.anno || b.mese - a.mese);
   const t = document.getElementById('archLista');
-  t.innerHTML = '<tr><th>Periodo</th><th>Azienda</th><th>Dipendente</th><th>Lordo €</th><th>Trattenute €</th><th>Netto €</th><th></th></tr>'
+  t.innerHTML = '<tr><th>Periodo</th><th>Tipo</th><th>Azienda</th><th>Dipendente</th><th>Lordo €</th><th>Trattenute €</th><th>Netto €</th><th></th></tr>'
     + rows.map(b => {
       const az = aziende.find(a => a.id === b.aziendaId), d = dipendenti.find(x => x.id === b.dipId);
-      return `<tr><td>${MESI[b.mese - 1]} ${b.anno}</td><td>${esc(az ? az.ragioneSociale : b.aziendaId)}</td>
+      const tp = (b.input && b.input.tipo) || 'ordinaria';
+      return `<tr><td>${MESI[b.mese - 1]} ${b.anno}</td>
+        <td>${tp === '13ma' ? '13ª' : tp === '14ma' ? '14ª' : 'Ordinaria'}</td>
+        <td>${esc(az ? az.ragioneSociale : b.aziendaId)}</td>
         <td>${esc(d ? d.cognome + ' ' + d.nome : b.dipId)}</td>
         <td class="num">${fmt(b.calc.totCompetenze)}</td><td class="num">${fmt(b.calc.totTrattenute)}</td>
         <td class="num"><b>${fmt(b.calc.netto)}</b></td>
