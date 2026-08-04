@@ -667,7 +667,11 @@
     // RATEI FERIE/PERMESSI
     // ============================================================
     const contaMese = meseMaturaRateo(emp, anno, mese);
-    const ferieMat = contaMese ? r5(cc.ferieGiorniAnno * ((emp.percPartTime || 100) / 100) / 12) : 0;
+    // ferie annue: 26 giorni su settimana di 6 giorni, 22 su settimana di 5.
+    // Impostabile sul singolo dipendente, altrimenti vale il dato di contratto.
+    const ferieAnno = (emp.ferieGiorniAnno != null && emp.ferieGiorniAnno > 0)
+      ? emp.ferieGiorniAnno : cc.ferieGiorniAnno;
+    const ferieMat = contaMese ? r5(ferieAnno * ((emp.percPartTime || 100) / 100) / 12) : 0;
     const rolMat = contaMese ? r5((emp.rolOreAnno || cc.rolOreAnno) * ((emp.percPartTime || 100) / 100) / 12) : 0;
     const exFestMat = contaMese ? r5(cc.exFestivitaOreAnno * ((emp.percPartTime || 100) / 100) / 12) : 0;
     const prev = ultimoStorico(storico);

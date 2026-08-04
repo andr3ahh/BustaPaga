@@ -252,5 +252,31 @@ console.log('== TEST 10: metodo IRPEF progressivo sul cumulato ==');
      lug.irpefLorda < lugAnn.irpefLorda ? 1 : 0, 1, 0);
 }
 
+console.log('== TEST 11: ratei ferie — riscontro sul prospetto di un cedolino reale (07/2026) ==');
+{
+  // Prospetto ratei del cedolino: residui A.P. 6,00 gg, maturati 12,83, goduti 11,00
+  // (6,00 dell'anno precedente + 5,00 dell'anno corrente), residui totali 7,83.
+  // Il dipendente ha settimana di 5 giorni, quindi 22 giorni di ferie l'anno.
+  const emp = { livello: 'QUADRO', dataAssunzione: '2024-04-02', retribuzioneMensile: 4585.71,
+    quas: false, quadrifor: false, ferieGiorniAnno: 22, ferieResidueIniziali: 6.00 };
+  const godute = { 3: 6.00, 6: 4.00, 7: 1.00 };
+  const storico = [];
+  for (let m = 1; m <= 7; m++) storico.push(E.calcolaBusta(P, azienda, emp,
+    { anno: 2026, mese: m, giorniRetribuiti: 26, giorniLavorati: 21, oreLavorate: 168,
+      giorniDetrazione: new Date(2026, m, 0).getDate(), ferieGodute: godute[m] || 0 }, storico));
+  const f = storico[6].ratei.ferie;
+  eq('residui anno precedente', f.residuoAP, 6.00, 0.001);
+  eq('maturati a luglio (7/12 di 22)', f.maturato, 12.83, 0.005);
+  eq('goduti nell\'anno', f.goduto, 11.00, 0.001);
+  eq('residui totali', f.saldo, 7.83, 0.005);
+  // il dato di contratto (26 gg) resta il predefinito quando non impostato sul dipendente
+  const senza = Object.assign({}, emp, { ferieGiorniAnno: null });
+  const s2 = [];
+  for (let m = 1; m <= 7; m++) s2.push(E.calcolaBusta(P, azienda, senza,
+    { anno: 2026, mese: m, giorniRetribuiti: 26, giorniLavorati: 21, oreLavorate: 168,
+      giorniDetrazione: new Date(2026, m, 0).getDate(), ferieGodute: godute[m] || 0 }, s2));
+  eq('senza impostazione vale il contratto (26 gg)', s2[6].ratei.ferie.maturato, 26 * 7 / 12, 0.005);
+}
+
 console.log(`\n===== RISULTATO: ${ok} verifiche superate, ${ko} fallite =====`);
 process.exit(ko ? 1 : 0);
