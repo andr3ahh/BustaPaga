@@ -83,6 +83,15 @@
   .zinail .riga span:first-child { width: 26px; }
   /* banda elementi della retribuzione */
   .zelem { display: flex; border: 1px solid var(--lul-linea); border-top: 0; }
+  /* margine sinistro riservato alla dicitura verticale, senza cornice */
+  .zmargine { width: 15px; border-right: 1px solid var(--lul-linea); }
+  /* colonna di assoggettamento: sovrasta le due colonne di asterischi */
+  .zsogg { width: 16px; border-right: 1px solid var(--lul-linea); display: flex;
+    flex-direction: column; align-items: center; padding-top: 1px; }
+  .zsogg .et-sogg { font-family: Arial, Helvetica, sans-serif; font-size: 4.6px; letter-spacing: .2px; }
+  .zsogg-parole { flex: 1; display: flex; gap: 1px; justify-content: center; }
+  .zsogg-parole span { writing-mode: vertical-rl; transform: rotate(180deg);
+    font-family: Arial, Helvetica, sans-serif; font-size: 4.6px; letter-spacing: .6px; }
   .zvert { writing-mode: vertical-rl; transform: rotate(180deg); font-family: Arial, Helvetica, sans-serif;
     font-size: 5.6px; text-align: center; letter-spacing: .3px; padding: 2px 1px; }
   .zelem-grid { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); }
@@ -843,8 +852,13 @@ function renderLUL(az, dip, inp, c) {
     ['Terzo elem.', el.terzoElemento], ['Ind.Funzione', el.indennitaFunzione],
     ['Scatti anz.', el.scatti], ['SUP.ASS.', el.superminimo]
   ];
-  const celleElem = elementi.map(([n, v]) =>
-    `<div>${v ? `<div class="et">${n}</div><div class="num zval">${fmt(v, 5)}</div>` : ''}</div>`).join('');
+  // La banda riproduce la griglia del modello: sei colonne per tre righe, di cui
+  // l'ultima riservata a "Prossimo scatto" e al totale. Le caselle non utilizzate
+  // restano vuote come sul cedolino a stampa.
+  const cellaElem = ([n, v]) =>
+    `<div>${v ? `<div class="et">${n}</div><div class="num zval">${fmt(v, 5)}</div>` : ''}</div>`;
+  const celleElem = elementi.map(cellaElem).join('')
+    + '<div></div>'.repeat(12);
 
   // Numero progressivo del LUL: assegnato alla prima elaborazione e conservato
   // con la busta, così una ristampa riporta sempre lo stesso numero.
@@ -952,6 +966,11 @@ function renderLUL(az, dip, inp, c) {
 
   <!-- ============ ELEMENTI DELLA RETRIBUZIONE ============ -->
   <div class="zelem">
+    <div class="zmargine"></div>
+    <div class="zsogg">
+      <div class="et-sogg">SOGG</div>
+      <div class="zsogg-parole"><span>IRPEF</span><span>INPS</span></div>
+    </div>
     <div style="width:15px;border-right:1px solid var(--lul-linea);display:flex;align-items:center;justify-content:center">
       <div class="zvert">ELEMENTI DELLA RETRIBUZIONE</div>
     </div>
@@ -970,9 +989,9 @@ function renderLUL(az, dip, inp, c) {
   <!-- ============ VOCI VARIABILI DEL MESE ============ -->
   <div class="zvoci-box">
     <div class="zside"><div class="testo">${esc(az.note || '')}</div></div>
+    <div style="width:16px;border-right:1px solid var(--lul-linea)"></div>
     <div class="zvoci-corpo">
       <div class="zrow" style="align-items:flex-end">
-        <div style="width:16px;font-family:Arial;font-size:5px;text-align:center">SOGG</div>
         <div style="flex:1" class="zbar-blu">VOCI VARIABILI DEL MESE</div>
         <div style="width:92px" class="zbar-blu">IMPORTO BASE</div>
         <div style="width:104px" class="zbar-blu">RIFERIMENTO</div>
@@ -985,12 +1004,15 @@ function renderLUL(az, dip, inp, c) {
 
   <!-- ============ RIEPILOGHI ============ -->
   ${boxLab('CONGUAGLIO', cg ? `<div class="zrow" style="font-size:9px;gap:10px">
+      <span style="flex:0.8">OneriDed <b>${fmt(cg.oneriDeducibili || 0)}</b></span>
       <span style="flex:1">Imponibile <b>${fmt(cg.impFiscAnnuo)}</b></span>
       <span style="flex:1">IRPEF lorda <b>${fmt(cg.lordaAnnua)}</b></span>
       <span style="flex:1">Detrazioni <b>${fmt(cg.detrAnnua)}</b></span>
       <span style="flex:1">IRPEF trattenuta <b>${fmt(cg.irpefTrattenutaAnno)}</b></span>
       <span style="flex:1">Add.regionale <b>${fmt(cg.addRegionaleDovuta)}</b></span>
       <span style="flex:1">Add.comunale <b>${fmt(cg.addComunaleDovuta)}</b></span>
+      <span style="flex:0.7">${esc((params.addizionali.regionale.nome || '').substring(0, 3))}
+        ${esc(params.addizionali.comunale.nome || '')}</span>
     </div>` : '', 'border-top:0')}
 
   ${boxLab('PROGRESSIVI', `<div class="zrow" style="font-size:9px;gap:10px">
@@ -998,7 +1020,6 @@ function renderLUL(az, dip, inp, c) {
       <span style="flex:1">Imp. INAIL <b>${fmt(pr.impInps)}</b></span>
       <span style="flex:1">Imp. IRPEF <b>${fmt(pr.impIrpef)}</b></span>
       <span style="flex:1">IRPEF pagata <b>${fmt(pr.irpefPagata)}</b></span>
-      <span style="flex:1">Contributi <b>${fmt(pr.contributi)}</b></span>
     </div>`, 'border-top:0')}
 
   ${boxLab('T.F.R.', `<div class="zrow" style="font-size:9px;gap:10px">
