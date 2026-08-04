@@ -146,10 +146,22 @@
   .lul-cred { font-size: 7px; text-align: center; border-top: 1px solid var(--bordo); padding: 2px; color: #444; }
 
   @media print {
-    body { background: #fff; }
+    body { background: #fff; margin: 0; }
     body.print-lul > *:not(#printArea) { display: none !important; }
     #printArea { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
-    #printArea .zlul { width: 100%; font-size: 9px; }
+    /* Il cedolino occupa l'intero foglio: la tabella delle voci si dilata per
+       spingere riepiloghi e dicitura finale a fondo pagina, come sul modello. */
+    #printArea .zlul {
+      width: 100%; margin: 0; padding-top: 6px;
+      display: flex; flex-direction: column;
+      min-height: 271mm;              /* A4 297mm meno i margini di stampa */
+    }
+    #printArea .zvoci-box { flex: 1 1 auto; }
+    #printArea .zvoci-corpo { display: flex; flex-direction: column; }
+    #printArea table.zvoci { flex: 0 0 auto; }      /* righe compatte */
+    #printArea .zvoci-spazio { flex: 1 1 auto; }    /* lo spazio libero resta in fondo */
+    #printArea .zfoot { margin-top: auto; padding-top: 6px; }
+    #printArea .zlul, #printArea .zlul * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     @page { size: A4 portrait; margin: 10mm; }
   }
   #printArea { display: none; }
@@ -999,6 +1011,7 @@ function renderLUL(az, dip, inp, c) {
         <div style="width:86px" class="zbar-blu">COMPETENZE</div>
       </div>
       <table class="zvoci">${righe}${riempimento}</table>
+      <div class="zvoci-spazio"></div>
     </div>
   </div>
 
