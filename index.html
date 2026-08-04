@@ -39,6 +39,16 @@
   .err { color: var(--rosso); font-size: 13px; }
   textarea.json { width: 100%; min-height: 380px; font-family: monospace; font-size: 12px; }
 
+  .logobox { border: 1px solid #ccc; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 7px; }
+  .logotit { font-size: 13px; font-weight: 600; color: var(--blu); }
+  .logotit small { font-weight: 400; color: #666; }
+  .logoprev { height: 74px; border: 1px dashed #bbb; border-radius: 5px; display: flex;
+    align-items: center; justify-content: center; background: #fafafa; overflow: hidden; }
+  .logoprev img { max-width: 100%; max-height: 68px; object-fit: contain; }
+  .logoprev span { color: #999; font-size: 12px; }
+  .logobox input[type=file] { font-size: 12px; }
+  .logobox button { align-self: flex-start; padding: 4px 12px; font-size: 12px; }
+
   /* ============ LUL — riproduzione fedele del modello ============ */
   :root { --lul-linea: #2f3f8f; --lul-verde: #00863c; --lul-blu: #26307d; }
   .lul-wrap { background: #fff; padding: 10px; overflow-x: auto; }
@@ -63,6 +73,9 @@
   .zgreen { border: 1.6px solid var(--lul-verde); border-radius: 7px; }
   /* testata INAIL */
   .zinail { border: 1px solid var(--lul-linea); padding: 4px 6px; width: 232px; }
+  .zloghi { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 4px; }
+  .zloghi img { max-height: 44px; max-width: 104px; object-fit: contain; }
+  .zlogo-az { max-height: 30px; max-width: 120px; object-fit: contain; margin-right: 8px; vertical-align: middle; }
   .zinail .marchio { font-family: Arial Black, Arial, sans-serif; font-weight: 900; font-size: 33px;
     letter-spacing: 2px; text-align: center; line-height: 1; margin: 2px 0 6px; }
   .zinail img { max-width: 100%; max-height: 52px; display: block; margin: 0 auto 5px; }
@@ -181,10 +194,31 @@
       <label class="f" style="grid-column: span 2">Dicitura in calce al cedolino
         <input id="az_dicitura" placeholder="Ragione sociale, Autorizzazione Inail n. ___ del __/__/____"></label>
       <label class="f">Numerazione LUL — prossimo n.<input id="az_progressivo" type="number" min="1" placeholder="1"></label>
-      <label class="f" style="grid-column: span 2">Logo in testata (facoltativo, file immagine)
-        <input id="az_logofile" type="file" accept="image/*" onchange="caricaLogo(event)"></label>
       <label class="f">Note legali / rappresentante<input id="az_note"></label>
     </form>
+    <h2 style="margin-top:16px">Loghi da stampare sul cedolino</h2>
+    <p class="note">Caricare i file immagine (PNG o JPG, max 300 KB ciascuno). Compaiono in testata alla busta paga.
+    Usare solo loghi per i quali si dispone dell'autorizzazione all'uso.</p>
+    <div class="grid g3" style="margin-top:10px">
+      <div class="logobox">
+        <div class="logotit">Logo INAIL <small>(riquadro in alto a destra)</small></div>
+        <div class="logoprev" id="prev_logo"><span>nessun logo</span></div>
+        <input type="file" accept="image/*" onchange="caricaLogo(event,'logo')">
+        <button type="button" class="b warn" onclick="togliLogo('logo')">Rimuovi</button>
+      </div>
+      <div class="logobox">
+        <div class="logotit">Logo INPS <small>(accanto al riquadro INAIL)</small></div>
+        <div class="logoprev" id="prev_logoInps"><span>nessun logo</span></div>
+        <input type="file" accept="image/*" onchange="caricaLogo(event,'logoInps')">
+        <button type="button" class="b warn" onclick="togliLogo('logoInps')">Rimuovi</button>
+      </div>
+      <div class="logobox">
+        <div class="logotit">Logo azienda <small>(accanto alla ragione sociale)</small></div>
+        <div class="logoprev" id="prev_logoAzienda"><span>nessun logo</span></div>
+        <input type="file" accept="image/*" onchange="caricaLogo(event,'logoAzienda')">
+        <button type="button" class="b warn" onclick="togliLogo('logoAzienda')">Rimuovi</button>
+      </div>
+    </div>
     <div class="actions">
       <button class="b" onclick="salvaAzienda()">Salva azienda</button>
       <button class="b sec" onclick="resetAzForm()">Annulla</button>
@@ -434,23 +468,38 @@ function salvaAzienda() {
     filiale: val('az_filiale'), centroCosto: val('az_centrocosto'), tipoCosto: val('az_tipocosto'),
     autNum: val('az_autnum'), autData: val('az_autdata'), autSede: val('az_autsede'),
     dicitura: val('az_dicitura'), progressivo: parseInt(val('az_progressivo')) || 1,
-    logo: logoCaricato !== null ? logoCaricato : (aziende.find(a => a.id === id) || {}).logo || '',
+    logo: loghi.logo, logoInps: loghi.logoInps, logoAzienda: loghi.logoAzienda,
     note: val('az_note') };
   const i = aziende.findIndex(a => a.id === id);
   if (i >= 0) aziende[i] = az; else aziende.push(az);
   save(LS.az, aziende); resetAzForm(); refreshAll();
 }
-let logoCaricato = null;   // data URI del logo selezionato nel form (null = invariato)
-function caricaLogo(ev) {
+// Loghi dell'azienda in lavorazione, come data URI. Chiave = campo di destinazione.
+let loghi = { logo: '', logoInps: '', logoAzienda: '' };
+function caricaLogo(ev, quale) {
   const f = ev.target.files[0];
-  if (!f) { logoCaricato = null; return; }
-  if (f.size > 300 * 1024) { alert('Immagine troppo grande: usare un file sotto i 300 KB.'); ev.target.value = ''; return; }
+  if (!f) return;
+  if (f.size > 300 * 1024) {
+    alert('Immagine troppo grande (' + Math.round(f.size / 1024) + ' KB): usare un file sotto i 300 KB.');
+    ev.target.value = ''; return;
+  }
   const r = new FileReader();
-  r.onload = () => { logoCaricato = r.result; };
+  r.onload = () => { loghi[quale] = r.result; mostraLoghi(); };
+  r.onerror = () => alert('Non è stato possibile leggere il file.');
   r.readAsDataURL(f);
 }
+function togliLogo(quale) { loghi[quale] = ''; mostraLoghi(); }
+function mostraLoghi() {
+  for (const k of ['logo', 'logoInps', 'logoAzienda']) {
+    const box = document.getElementById('prev_' + k);
+    if (box) box.innerHTML = loghi[k]
+      ? `<img src="${esc(loghi[k])}" alt="">`
+      : '<span>nessun logo</span>';
+  }
+}
 function resetAzForm() {
-  document.getElementById('azForm').reset(); set('az_id', ''); logoCaricato = null;
+  document.getElementById('azForm').reset(); set('az_id', '');
+  loghi = { logo: '', logoInps: '', logoAzienda: '' }; mostraLoghi();
   document.getElementById('azFormTitle').textContent = 'Nuova azienda';
 }
 function editAzienda(id) {
@@ -463,7 +512,8 @@ function editAzienda(id) {
   set('az_filiale', a.filiale || ''); set('az_centrocosto', a.centroCosto || ''); set('az_tipocosto', a.tipoCosto || '');
   set('az_autnum', a.autNum || ''); set('az_autdata', a.autData || ''); set('az_autsede', a.autSede || '');
   set('az_dicitura', a.dicitura || ''); set('az_progressivo', a.progressivo || 1);
-  logoCaricato = null;
+  loghi = { logo: a.logo || '', logoInps: a.logoInps || '', logoAzienda: a.logoAzienda || '' };
+  mostraLoghi();
   document.getElementById('azFormTitle').textContent = 'Modifica azienda';
   window.scrollTo(0, 0);
 }
@@ -722,7 +772,8 @@ function renderLUL(az, dip, inp, c) {
     <div style="flex:1">
       <div class="zrow">
         ${boxLab('Codice Azienda', `<div class="zval">${esc(az.codice || '')}</div>`, 'width:118px;border-right:0')}
-        ${boxLab('Ragione Sociale', `<div class="zval b">${esc(az.ragioneSociale || '')}</div>`, 'flex:1')}
+        ${boxLab('Ragione Sociale', `<div class="zval b">${az.logoAzienda
+            ? `<img class="zlogo-az" src="${esc(az.logoAzienda)}" alt="">` : ''}${esc(az.ragioneSociale || '')}</div>`, 'flex:1')}
       </div>
       ${boxLab('Indirizzo', `<div class="zval">${esc(az.indirizzo || '')}</div>
         <div class="zval">${esc(az.citta || '')}</div>`, 'border-top:0')}
@@ -740,7 +791,9 @@ function renderLUL(az, dip, inp, c) {
     </div>
     <div>
       <div class="zinail">
-        ${az.logo ? `<img src="${esc(az.logo)}" alt="">` : '<div class="marchio">INAIL</div>'}
+        ${(az.logo || az.logoInps)
+          ? `<div class="zloghi">${az.logo ? `<img src="${esc(az.logo)}" alt="">` : ''}${az.logoInps ? `<img src="${esc(az.logoInps)}" alt="">` : ''}</div>`
+          : '<div class="marchio">INAIL</div>'}
         <div class="riga"><span>Aut.</span><span>${esc(az.autNum || '')}</span></div>
         <div class="riga"><span>Del</span><span>${fmtData(az.autData)}</span><span>Sede</span><span>${esc(az.autSede || '')}</span></div>
         <div class="riga"><span>Nr.</span><span>${numeroLul}</span></div>
@@ -1028,7 +1081,7 @@ function refreshAll() {
   const oggi = new Date();
   set('e_anno', oggi.getFullYear()); set('c_anno', oggi.getFullYear());
   document.getElementById('e_mese').innerHTML = MESI.map((m, i) => `<option value="${i + 1}"${i === oggi.getMonth() ? ' selected' : ''}>${m}</option>`).join('');
-  refreshAll(); precompilaElabora();
+  refreshAll(); precompilaElabora(); mostraLoghi();
   if (!archivioPersistente) avvisaArchivio();
 })();
 </script>
