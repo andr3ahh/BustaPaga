@@ -46,9 +46,13 @@ console.log('== TEST 2: busta LUGLIO 2026 — Quadro al minimo contrattuale, con
   eq('Qu.A.S. c/dip (56/12)', (c.voci.find(v => v.cod === 'Z31010') || {}).trattenuta, 4.67, 0.01);
   eq('Quadrifor c/dip (25/12)', (c.voci.find(v => v.cod === 'Z31020') || {}).trattenuta, 2.08, 0.01);
   // Ente Bilaterale Terziario: 0,05% su paga base + contingenza (2.183,09 + 540,37)
-  const ebt = Math.round((2183.09 + 540.37) * 0.05) / 100;         // 1.36
+  const convenzionale = 2183.09 + 540.37;
+  const ebt = Math.round(convenzionale * 0.05) / 100;              // 1.36 c/dipendente
+  const ebtAz = Math.round(convenzionale * 0.10) / 100;            // 2.72 c/azienda
   eq('Ente Bilaterale (0,05% su convenzionale)', (c.voci.find(v => v.cod === 'Z31005') || {}).trattenuta, ebt, 0.01);
-  const impFisc = Math.round((lordo - 419.09 - 4.67 - 2.08 - ebt) * 100) / 100;  // 4052.24
+  eq('Ente Bilaterale c/azienda (0,10%)', (c.voci.find(v => v.cod === 'Z31006') || {}).competenza, ebtAz, 0.01);
+  // la quota E.B. del dipendente non è deducibile e quella aziendale è imponibile
+  const impFisc = Math.round((lordo + ebtAz - 419.09 - 4.67 - 2.08) * 100) / 100;  // 4056.32
   eq('imponibile fiscale', c.imponibileFiscale, impFisc, 0.02);
   // IRPEF 2026: 23% fino 28k, 33% 28-50k su base annualizzata
   const annuo = impFisc * 12;
@@ -194,6 +198,58 @@ console.log('== TEST 8: scaglioni superiori dopo salvataggio/ricarica dei parame
   eq('add. regionale su 60.000 dopo salvataggio',
      E.addizionaleRegionale(salvati, 60000),
      r2Test(15000 * 0.0123 + 13000 * 0.0158 + 22000 * 0.0172 + 10000 * 0.0173), 0.02);
+}
+
+console.log('== TEST 9: riscontro integrale su cedolino reale Quadro Commercio (05/2025) ==');
+{
+  // Confronto voce per voce con un LUL reale: Quadro, azienda oltre 50 dipendenti,
+  // due premi a carico azienda (cassa sanitaria e polizza infortuni) imponibili,
+  // buoni pasto elettronici da 8 euro e rimborso spese documentate.
+  const az = { ragioneSociale: 'AZIENDA DI PROVA', dimensione: 'oltre50', inailTasso: 5 };
+  const emp = { livello: 'QUADRO', dataAssunzione: '2024-04-02', retribuzioneMensile: 4585.71,
+    terzoElemento: 11.36, quas: false, quadrifor: false, iscrittoPost96: true,
+    vociRicorrenti: [
+      { cod: 'Z00794', descr: 'Cassa sanitaria', importo: 5.64, C: 1, I: 1 },
+      { cod: 'Z00806', descr: 'Polizza infortuni', importo: 21.09, C: 1, I: 1 }
+    ] };
+  const c = E.calcolaBusta(P, az, emp, { anno: 2025, mese: 5, giorniRetribuiti: 26,
+    giorniLavorati: 19, oreLavorate: 146, giorniDetrazione: 31,
+    ferieGodute: 1.5, exFestGodute: 2, festivita: 1,
+    buoniPastoGiorni: 19, buoniPastoValore: 8, noteSpese: 61.50 }, []);
+  eq('totale competenze', c.totCompetenze, 4647.21, 0.01);
+  eq('imponibile contributivo', c.imponibileInps, 4612, 0);
+  eq('contributi c/dip. (IVS+CIGS+FIS+E.B.)',
+     E._r2(c.contributiDip + c.trattFondi + c.trattNonDeducibili), 451.32, 0.02);
+  eq('imponibile fiscale', c.imponibileFiscale, 4165.11, 0.02);
+  eq('retribuzione utile TFR', c.retribUtileTfr, 4585.71, 0.01);
+  eq('contributo aggiuntivo TFR (FAP 0,50%)', c.fap, 23.06, 0.01);
+  eq('quota TFR del mese', c.quotaTfrNetta, 316.62, 0.01);
+  // i premi a carico azienda sono tassati ma non corrisposti in busta
+  const casse = c.voci.filter(v => v.cod === 'Z00794' || v.cod === 'Z00806');
+  eq('premi aziendali esposti come voci', casse.length, 2, 0);
+  eq('premi non pagati in busta (figurativi)', casse.filter(v => v.figurativa).length, 2, 0);
+}
+
+console.log('== TEST 10: metodo IRPEF progressivo sul cumulato ==');
+{
+  // Con retribuzione costante il progressivo coincide con l'annualizzato; con una
+  // mensilità aggiuntiva non deve far scattare aliquote superiori a quelle dovute.
+  const emp = { livello: 'QUADRO', dataAssunzione: '2026-01-01', quas: true, quadrifor: true };
+  const inp = (m, extra) => Object.assign({ anno: 2026, mese: m, giorniRetribuiti: 26,
+    giorniLavorati: 21, oreLavorate: 168, giorniDetrazione: new Date(2026, m, 0).getDate() }, extra || {});
+  const storico = [];
+  for (let m = 1; m <= 6; m++) storico.push(E.calcolaBusta(P, azienda, emp, inp(m), storico));
+  const costante = storico[5].irpefLorda;
+  eq('mesi costanti: progressivo = annualizzato', costante, storico[0].irpefLorda, 0.05);
+  // luglio con quattordicesima: l'imposta del mese cresce ma resta sotto il doppio
+  const lug = E.calcolaBusta(P, azienda, emp, inp(7), storico);
+  eq('mese con 14ª tassato più del mese ordinario', lug.irpefLorda > costante ? 1 : 0, 1, 0);
+  const annualizzato = JSON.parse(JSON.stringify(P));
+  annualizzato.irpef.metodo = 'annualizzato';
+  const lugAnn = E.calcolaBusta(annualizzato, azienda, emp, inp(7), storico);
+  console.log(`     luglio — progressivo ${lug.irpefLorda} / annualizzato ${lugAnn.irpefLorda}`);
+  eq('progressivo meno oneroso dell\'annualizzato sulla 14ª',
+     lug.irpefLorda < lugAnn.irpefLorda ? 1 : 0, 1, 0);
 }
 
 console.log(`\n===== RISULTATO: ${ok} verifiche superate, ${ko} fallite =====`);

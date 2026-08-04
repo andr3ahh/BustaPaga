@@ -154,6 +154,7 @@
         fascia3Base: 1910, fascia3Den: 22000,
         maggiorazione65: 65             // se 25.000 < RC ≤ 35.000
       },
+      metodo: 'progressivo',            // 'progressivo' (cumulato annuo) | 'annualizzato'
       trattamentoIntegrativo: 1200,     // ex bonus Renzi, RC ≤ 15.000 (o capienza 15-28k)
       // L. 207/2024 (strutturale dal 2025)
       sommaIntegrativa: [               // % sul reddito lavoro dip., RC ≤ 20.000
@@ -434,6 +435,23 @@
     if (input.noteSpese > 0)
       add({ cod: 'Z00156', descr: 'Rimborso spese documentate', competenza: r2(input.noteSpese), C:0, I:0, T:0, N:1 });
 
+    // ---------- voci libere: casse, polizze, welfare, trattenute varie ----------
+    // Ricorrenti (definite sul dipendente) e occasionali (inserite sul mese).
+    // Ogni voce dichiara a quali imponibili concorre e se è pagata in busta:
+    //   C = imponibile contributivo, I = imponibile fiscale, T = imponibile TFR,
+    //   N = considerata nel netto (se 0 la voce è figurativa: tassata ma non pagata).
+    const vociLibere = [].concat(emp.vociRicorrenti || [], input.vociExtra || []);
+    for (const v of vociLibere) {
+      const importo = r2(Number(v.importo) || 0);
+      if (!importo) continue;
+      const figurativa = !v.N && !v.trattenuta;
+      add({ cod: v.cod || 'Z00900', descr: v.descr || 'Voce aggiuntiva',
+            competenza: v.trattenuta ? undefined : importo,
+            trattenuta: v.trattenuta ? importo : undefined,
+            C: v.C ? 1 : 0, I: v.I ? 1 : 0, T: v.T ? 1 : 0, N: v.N ? 1 : 0,
+            figurativa });
+    }
+
     // ============================================================
     // IMPONIBILE PREVIDENZIALE E CONTRIBUTI
     // ============================================================
@@ -493,16 +511,25 @@
       estDip = params.fondi.est.dipMensile;
       add({ cod: 'Z31000', descr: 'Contributo Fondo EST', trattenuta: estDip });
     }
-    // Ente Bilaterale Terziario: base convenzionale = paga base + contingenza
-    let ebtDip = 0;
+    // Ente Bilaterale Terziario: base convenzionale = paga base + contingenza.
+    // Trattamento fiscale diverso dai contributi di legge: essendo di fonte
+    // contrattuale e non obbligatorio per legge, la quota del dipendente non si
+    // deduce dall'imponibile IRPEF e la quota aziendale vi concorre.
+    let ebtDip = 0, ebtAzienda = 0;
     if (emp.enteBilaterale !== false && params.fondi.enteBilaterale) {
       const baseEbt = r2((el.pagaBase + el.contingenza) * ((emp.percPartTime || 100) / 100));
       ebtDip = r2(baseEbt * params.fondi.enteBilaterale.dipPct / 100);
+      ebtAzienda = r2(baseEbt * params.fondi.enteBilaterale.aziendaPct / 100);
       if (ebtDip > 0)
         add({ cod: 'Z31005', descr: 'Contributo Ente Bilaterale Terziario',
               base: baseEbt, qta: params.fondi.enteBilaterale.dipPct, um: '%', trattenuta: ebtDip });
+      if (ebtAzienda > 0)
+        add({ cod: 'Z31006', descr: 'Ente Bilaterale c/azienda (imponibile fiscale)',
+              competenza: ebtAzienda, C: 0, I: 1, T: 0, N: 0, figurativa: true });
     }
-    trattFondi = r2(quasDip + quadriforDip + estDip + ebtDip);
+    // deducibili dall'imponibile fiscale: casse di assistenza sanitaria e previdenza
+    trattFondi = r2(quasDip + quadriforDip + estDip);
+    const trattNonDeducibili = ebtDip;
 
     // ---------- previdenza complementare ----------
     const retribUtileTfrMese = r2(voci.filter(v => v.T).reduce((s, v) => s + (v.competenza || 0), 0));
@@ -534,7 +561,20 @@
     const redditoAnnuo = input.redditoAnnuoPresunto
       || r2(el.totale * cc.mensilita * ((emp.percPartTime || 100) / 100) * (1 - aliqDip / 100));
 
-    const irpefLordaMese = r2(irpefLordaAnnua(params, anno, imponibileFiscale * 12) / 12);
+    // IRPEF del mese. Metodo 'progressivo' (predefinito): l'imposta si calcola sul
+    // cumulato dell'anno proiettato a dodici mesi e si sottrae quanto già tassato,
+    // così mensilità aggiuntive e variabili non fanno scattare aliquote eccessive.
+    // Metodo 'annualizzato': ogni mese è tassato come se si ripetesse dodici volte.
+    let irpefLordaMese;
+    const mesiElaborati = storico.length + 1;
+    if ((params.irpef.metodo || 'progressivo') === 'progressivo') {
+      const impYTD = r2(storico.reduce((s, b) => s + (b.imponibileFiscale || 0), 0) + imponibileFiscale);
+      const lordaYTD = r2(irpefLordaAnnua(params, anno, impYTD / mesiElaborati * 12) * mesiElaborati / 12);
+      const lordaGia = r2(storico.reduce((s, b) => s + (b.irpefLorda || 0), 0));
+      irpefLordaMese = r2(Math.max(0, lordaYTD - lordaGia));
+    } else {
+      irpefLordaMese = r2(irpefLordaAnnua(params, anno, imponibileFiscale * 12) / 12);
+    }
     const ggDetrazione = (input.giorniDetrazione != null) ? input.giorniDetrazione : ggMese;
     const detrLavAnnua = detrazioneLavoroAnnua(params, redditoAnnuo, 365, emp.tempoDeterminato);
     const detrLavMese = r2(detrLavAnnua * ggDetrazione / 365);
@@ -668,7 +708,7 @@
       elementi: el, voci,
       imponibileInps, aliquotaDip: aliqDip,
       contributiDip: r2(contributiIvs + contributoAggiuntivo),
-      contributiIvs, contributoAggiuntivo, trattFondi, fpDip,
+      contributiIvs, contributoAggiuntivo, trattFondi, trattNonDeducibili, fpDip,
       imponibileFiscale, irpefLorda: irpefLordaMese,
       detrazioni: detrTot, irpefNetta: irpefNettaMese,
       sommaIntegrativa: sommaIntegr, trattamentoIntegrativo: trattIntegr,

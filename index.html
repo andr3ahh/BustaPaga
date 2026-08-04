@@ -274,6 +274,13 @@
       <label class="f">% dipendente fondo pensione<input id="d_fpdip" type="number" step="0.01" value="0.55"></label>
       <label class="f">% azienda fondo pensione<input id="d_fpaz" type="number" step="0.01" value="1.55"></label>
     </form>
+    <h3 style="margin:14px 0 4px;font-size:14px;color:var(--blu)">Voci ricorrenti mensili</h3>
+    <p class="note">Casse sanitarie, polizze infortuni, welfare, trattenute fisse: compaiono su ogni busta
+    del dipendente. Le spunte indicano a quali imponibili la voce concorre. <b>In busta</b> significa che
+    l'importo è pagato al dipendente; se non spuntata la voce è figurativa (tassata ma non corrisposta,
+    come i premi che l'azienda versa a una cassa).</p>
+    <table class="lista" id="tabRicorrenti"></table>
+    <div class="actions"><button class="b sec" onclick="aggiungiVoce('ricorrenti')">+ Aggiungi voce ricorrente</button></div>
     <div class="actions">
       <button class="b" onclick="salvaDipendente()">Salva dipendente</button>
       <button class="b sec" onclick="resetDipForm()">Annulla</button>
@@ -331,6 +338,11 @@
       <label class="chk"><input type="checkbox" id="e_conguaglio"> Conguaglio fiscale (auto a dicembre)</label>
       <label class="chk"><input type="checkbox" id="e_fringeimp"> Fringe benefit imponibile (oltre soglia annua)</label>
     </div>
+    <h3 style="margin:14px 0 4px;font-size:14px;color:var(--blu)">Altre voci solo per questo mese</h3>
+    <p class="note">Voci occasionali che si aggiungono a quelle ricorrenti del dipendente
+    (premi una tantum, rimborsi particolari, trattenute straordinarie).</p>
+    <table class="lista" id="tabExtra"></table>
+    <div class="actions"><button class="b sec" onclick="aggiungiVoce('extra')">+ Aggiungi voce del mese</button></div>
     <div class="actions">
       <button class="b" onclick="anteprimaBusta()">Calcola anteprima</button>
       <button class="b ok" onclick="salvaBusta()">Salva busta in archivio</button>
@@ -532,6 +544,39 @@ function renderAziende() {
 }
 
 // ---------------- dipendenti ----------------
+// ---------------- voci libere (ricorrenti sul dipendente, occasionali sul mese) ----------------
+const vociTab = { ricorrenti: [], extra: [] };
+function aggiungiVoce(dove) {
+  vociTab[dove].push({ cod: '', descr: '', importo: 0, trattenuta: false, C: 1, I: 1, T: 0, N: 0 });
+  renderVoci(dove);
+}
+function rimuoviVoce(dove, i) { vociTab[dove].splice(i, 1); renderVoci(dove); }
+function aggiornaVoce(dove, i, campo, valore, checkbox) {
+  vociTab[dove][i][campo] = checkbox ? (valore ? 1 : 0) : valore;
+}
+function renderVoci(dove) {
+  const t = document.getElementById(dove === 'ricorrenti' ? 'tabRicorrenti' : 'tabExtra');
+  if (!t) return;
+  const righe = vociTab[dove];
+  if (!righe.length) { t.innerHTML = '<tr><td style="color:#777">Nessuna voce.</td></tr>'; return; }
+  const c = (i, campo, on) => `<input type="checkbox" ${on ? 'checked' : ''}
+    onchange="aggiornaVoce('${dove}',${i},'${campo}',this.checked,true)">`;
+  t.innerHTML = `<tr><th>Codice</th><th>Descrizione</th><th style="text-align:right">Importo €</th>
+      <th>Natura</th><th title="Imponibile contributivo">INPS</th><th title="Imponibile fiscale">IRPEF</th>
+      <th title="Imponibile TFR">TFR</th><th title="Pagata al dipendente">In busta</th><th></th></tr>`
+    + righe.map((v, i) => `<tr>
+      <td><input style="width:64px" value="${esc(v.cod)}" placeholder="Z00900"
+        onchange="aggiornaVoce('${dove}',${i},'cod',this.value)"></td>
+      <td><input style="width:100%" value="${esc(v.descr)}" placeholder="Descrizione della voce"
+        onchange="aggiornaVoce('${dove}',${i},'descr',this.value)"></td>
+      <td><input type="number" step="0.01" style="width:88px;text-align:right" value="${v.importo}"
+        onchange="aggiornaVoce('${dove}',${i},'importo',parseFloat(this.value)||0)"></td>
+      <td><select onchange="aggiornaVoce('${dove}',${i},'trattenuta',this.value==='t')">
+        <option value="c"${v.trattenuta ? '' : ' selected'}>Competenza</option>
+        <option value="t"${v.trattenuta ? ' selected' : ''}>Trattenuta</option></select></td>
+      <td>${c(i, 'C', v.C)}</td><td>${c(i, 'I', v.I)}</td><td>${c(i, 'T', v.T)}</td><td>${c(i, 'N', v.N)}</td>
+      <td><button class="b warn" onclick="rimuoviVoce('${dove}',${i})">Togli</button></td></tr>`).join('');
+}
 function ralToMensile() {
   const ral = num('d_ral');
   if (ral > 0) set('d_retribmensile', (ral / (params.ccnl.mensilita || 14)).toFixed(2));
@@ -552,7 +597,8 @@ function salvaDipendente() {
     ferieResidueIniziali: num('d_ferieres'), rolResidueIniziali: num('d_rolres'), exFestResidueIniziali: num('d_exfres'),
     modalitaPagamento: val('d_modpag'), iban: val('d_iban').toUpperCase(),
     iscrittoPost96: chk('d_post96'), quas: chk('d_quas'), quadrifor: chk('d_quadrifor'),
-    fondoPensione: chk('d_fondopens'), fondoPensioneDipPct: num('d_fpdip'), fondoPensioneAzPct: num('d_fpaz') };
+    fondoPensione: chk('d_fondopens'), fondoPensioneDipPct: num('d_fpdip'), fondoPensioneAzPct: num('d_fpaz'),
+    vociRicorrenti: vociTab.ricorrenti.filter(v => v.importo) };
   const i = dipendenti.findIndex(x => x.id === id);
   if (i >= 0) dipendenti[i] = d; else dipendenti.push(d);
   save(LS.dip, dipendenti); resetDipForm(); refreshAll();
@@ -563,6 +609,7 @@ function resetDipForm() {
   document.getElementById('d_post96').checked = true;
   document.getElementById('d_quas').checked = true;
   document.getElementById('d_quadrifor').checked = true;
+  vociTab.ricorrenti = []; renderVoci('ricorrenti');
   document.getElementById('dipFormTitle').textContent = 'Nuovo dipendente';
 }
 function editDipendente(id) {
@@ -583,6 +630,7 @@ function editDipendente(id) {
   document.getElementById('d_quadrifor').checked = d.quadrifor !== false;
   document.getElementById('d_fondopens').checked = !!d.fondoPensione;
   set('d_fpdip', d.fondoPensioneDipPct || 0.55); set('d_fpaz', d.fondoPensioneAzPct || 1.55);
+  vociTab.ricorrenti = JSON.parse(JSON.stringify(d.vociRicorrenti || [])); renderVoci('ricorrenti');
   document.getElementById('dipFormTitle').textContent = 'Modifica dipendente';
   window.scrollTo(0, 0);
 }
@@ -652,6 +700,7 @@ function inputElabora() {
     fringeBenefit: num('e_fringe'), fringeBenefitImponibile: chk('e_fringeimp'),
     rataAddRegionale: num('e_addreg'), rataAddComunale: num('e_addcom'), rataAccontoComunale: num('e_addacc'),
     arrotondamentoPrecedente: num('e_arrprec'),
+    vociExtra: vociTab.extra.filter(v => v.importo),
     cessazione: chk('e_cessazione'), conguaglio: chk('e_conguaglio') || undefined
   };
 }
@@ -1102,6 +1151,7 @@ function refreshAll() {
   set('e_anno', oggi.getFullYear()); set('c_anno', oggi.getFullYear());
   document.getElementById('e_mese').innerHTML = MESI.map((m, i) => `<option value="${i + 1}"${i === oggi.getMonth() ? ' selected' : ''}>${m}</option>`).join('');
   refreshAll(); precompilaElabora(); mostraLoghi();
+  renderVoci('ricorrenti'); renderVoci('extra');
   if (!archivioPersistente) avvisaArchivio();
 })();
 </script>
